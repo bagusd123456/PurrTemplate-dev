@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="backgroundButton">
+        <ui:VisualElement style="flex-grow: 1; flex-direction: row;">
+            <ui:Image name="avatar" style="width: 64px; height: 64px; align-self: center;" />
+            <ui:VisualElement style="flex-grow: 1;">
+                <ui:Label tabindex="-1" text="Label" parse-escape-sequences="true" display-tooltip-when-elided="true" name="displayName" style="-unity-text-align: middle-left;" />
+                <ui:Label tabindex="-1" text="Label" parse-escape-sequences="true" display-tooltip-when-elided="true" name="presence" style="-unity-text-align: middle-left;" />
+            </ui:VisualElement>
+            <ui:Button text="DM" parse-escape-sequences="true" display-tooltip-when-elided="true" name="dmButton" style="width: 32px; height: 32px; align-self: center;" />
+            <ui:Button text="..." parse-escape-sequences="true" display-tooltip-when-elided="true" name="moreButton" style="width: 32px; height: 32px; align-self: center;" />
+        </ui:VisualElement>
+    </ui:Button>
+</ui:UXML>

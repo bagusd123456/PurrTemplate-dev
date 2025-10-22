@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/VoiceSettingsModal.uss?fileID=7433441132597879392&amp;guid=f01552cc2355b864abb63e1494f2bd30&amp;type=3#VoiceSettingsModal" />
+    <ui:Label tabindex="-1" text="Voice Settings" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+    <ui:VisualElement style="flex-grow: 1; flex-direction: row;">
+        <ui:VisualElement name="inputDevice" class="voice-audio-device" style="flex-grow: 1;">
+            <ui:Label tabindex="-1" text="Input Device" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+            <ui:DropdownField name="inputDeviceDropdown" />
+            <ui:Label tabindex="-1" text="Input Volume" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+            <ui:Slider high-value="100" name="inputVolumeSlider" />
+        </ui:VisualElement>
+        <ui:VisualElement name="outputDevice" class="voice-audio-device" style="flex-grow: 1;">
+            <ui:Label tabindex="-1" text="Output Device" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+            <ui:DropdownField name="outputDeviceDropdown" />
+            <ui:Label tabindex="-1" text="Output Volume" parse-escape-sequences="true" display-tooltip-when-elided="true" />
+            <ui:Slider high-value="200" name="outputVolumeSlider" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:Toggle label="Push to talk" name="pttToggle" />
+    <ui:VisualElement name="mobileControls" style="flex-grow: 1;">
+        <ui:Button text="Audio Route Picker" parse-escape-sequences="true" display-tooltip-when-elided="true" name="audioRoutePickerButton" />
+    </ui:VisualElement>
+</ui:UXML>

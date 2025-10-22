@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 0; flex-direction: row; align-items: flex-start; align-self: auto; justify-content: flex-start;">
+        <ui:Label tabindex="-1" text="Friends" parse-escape-sequences="false" display-tooltip-when-elided="true" style="justify-content: flex-start; align-items: stretch; align-self: stretch; flex-direction: column; flex-grow: 0; -unity-text-align: middle-left; font-size: 18px;" />
+        <ui:VisualElement name="friendsListFilters" style="flex-grow: 1; flex-direction: row;">
+            <ui:Button text="Online" parse-escape-sequences="true" display-tooltip-when-elided="true" name="onlineButton" />
+            <ui:Button text="All" parse-escape-sequences="true" display-tooltip-when-elided="true" name="allButton" />
+            <ui:Button text="Pending" parse-escape-sequences="true" display-tooltip-when-elided="true" name="pendingButton" />
+            <ui:Button text="Blocked" parse-escape-sequences="true" display-tooltip-when-elided="true" enable-rich-text="true" name="blockedButton" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:ScrollView name="friendsList" style="flex-grow: 1;" />
+</ui:UXML>

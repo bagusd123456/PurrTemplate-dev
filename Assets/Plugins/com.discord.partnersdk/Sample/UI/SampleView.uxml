@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Template name="VoiceControlsView" src="project://database/Assets/UI/VoiceControlsView.uxml?fileID=9197481963319205126&amp;guid=a85a5674bf00d75469549d8eea237bdc&amp;type=3#VoiceControlsView" />
+    <Style src="project://database/Assets/UI/SampleView.uss?fileID=7433441132597879392&amp;guid=6cd700f29b4898846a5bf0a55b29b6fe&amp;type=3#SampleView" />
+    <ui:VisualElement class="ui-root">
+        <ui:TextField picking-mode="Ignore" label="Token" value="authorization token" name="token" />
+        <ui:VisualElement name="buttonBar" style="flex-grow: 0; flex-direction: row; align-items: flex-start; align-self: auto; justify-content: flex-start;">
+            <ui:Button text="Connect" parse-escape-sequences="true" display-tooltip-when-elided="true" name="connectButton" />
+            <ui:Button text="Get token with OAuth" parse-escape-sequences="true" display-tooltip-when-elided="true" name="getTokenButton" />
+            <ui:Button text="Disconnect" parse-escape-sequences="true" display-tooltip-when-elided="true" name="disconnectButton" />
+            <ui:Button text="Annoy Mode (Loud)" parse-escape-sequences="true" display-tooltip-when-elided="true" name="annoyModeButton" />
+        </ui:VisualElement>
+        <ui:VisualElement name="mainSection" style="flex-grow: 1; flex-direction: row; visibility: visible;">
+            <ui:VisualElement name="sidebar" style="flex-grow: 0; width: 225px;">
+                <ui:ScrollView name="homeList" style="align-self: auto; justify-content: flex-start; flex-grow: 1;" />
+                <ui:Instance template="VoiceControlsView" name="voiceControls" />
+            </ui:VisualElement>
+            <ui:VisualElement name="contentWell" style="flex-grow: 2;" />
+        </ui:VisualElement>
+        <ui:Label tabindex="-1" text="Offline&#x9;" parse-escape-sequences="true" display-tooltip-when-elided="true" name="currentStatus" />
+    </ui:VisualElement>
+</ui:UXML>

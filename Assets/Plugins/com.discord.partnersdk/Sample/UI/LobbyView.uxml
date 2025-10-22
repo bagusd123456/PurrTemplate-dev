@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 0; flex-direction: row; align-items: flex-start;">
+        <ui:Label tabindex="-1" text="Lobby [Lobby ID]" parse-escape-sequences="true" display-tooltip-when-elided="true" name="lobbyTitle" style="font-size: 18px; flex-grow: 1; align-self: center;" />
+        <ui:Button text="Join Voice" parse-escape-sequences="true" display-tooltip-when-elided="true" name="joinVoiceButton" />
+    </ui:VisualElement>
+    <ui:VisualElement style="flex-grow: 1; flex-direction: row;">
+        <ui:VisualElement style="flex-grow: 1;">
+            <ui:ScrollView name="messageList" style="flex-grow: 1;" />
+            <ui:VisualElement name="inputBar" style="flex-direction: row; align-items: flex-end; flex-grow: 0; flex-shrink: 0;">
+                <ui:TextField picking-mode="Ignore" name="messageInput" style="flex-grow: 1; flex-shrink: 1;" />
+                <ui:Button text="Send" parse-escape-sequences="true" display-tooltip-when-elided="true" name="sendButton" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement style="flex-grow: 0; flex-shrink: 0;">
+            <ui:VisualElement style="flex-grow: 0; flex-direction: row;">
+                <ui:Label tabindex="-1" text="Members" parse-escape-sequences="true" display-tooltip-when-elided="true" name="Label" style="font-size: 18px; flex-grow: 1; align-self: center;" />
+                <ui:Button text="+" parse-escape-sequences="true" display-tooltip-when-elided="true" enable-rich-text="true" name="inviteFriendsButton" />
+            </ui:VisualElement>
+            <ui:ScrollView name="memberList" style="flex-grow: 1; min-width: 250px; max-width: 250px;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

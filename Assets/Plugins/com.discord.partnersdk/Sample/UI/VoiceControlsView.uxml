@@ -1,0 +1,18 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Button text="PTT" parse-escape-sequences="true" display-tooltip-when-elided="true" name="pttActiveButton" style="font-size: 32px;" />
+    <ui:VisualElement name="channelControls" style="flex-grow: 0; flex-direction: row;">
+        <ui:VisualElement style="flex-grow: 1;">
+            <ui:Label tabindex="-1" text="Voice Disconnected&#x9;" parse-escape-sequences="true" display-tooltip-when-elided="true" name="status" />
+            <ui:Label tabindex="-1" text="Channel Name" parse-escape-sequences="true" display-tooltip-when-elided="true" name="channelName" />
+        </ui:VisualElement>
+        <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="disconnectButton" style="background-image: url(&quot;project://database/Assets/Icons/call_end_24dp_333333_FILL0_wght400_GRAD0_opsz24.png?fileID=2800000&amp;guid=e221e7f0e61bff3469238b40372f165c&amp;type=3#call_end_24dp_333333_FILL0_wght400_GRAD0_opsz24&quot;); width: 32px; height: 32px; align-self: center;" />
+    </ui:VisualElement>
+    <ui:VisualElement style="flex-grow: 0; flex-direction: row; align-items: center;">
+        <ui:VisualElement style="flex-grow: 1;">
+            <ui:Label tabindex="-1" parse-escape-sequences="true" display-tooltip-when-elided="true" name="username" />
+        </ui:VisualElement>
+        <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="muteButton" enable-rich-text="false" style="width: 32px; height: 32px; background-image: url(&quot;project://database/Assets/Icons/mic_24dp_333333_FILL0_wght400_GRAD0_opsz24.png?fileID=2800000&amp;guid=cf6278b93d854f44d92185efb34614e0&amp;type=3#mic_24dp_333333_FILL0_wght400_GRAD0_opsz24&quot;);" />
+        <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="deafenButton" style="width: 32px; height: 32px; background-image: url(&quot;project://database/Assets/Icons/media_output_24dp_333333_FILL0_wght400_GRAD0_opsz24.png?fileID=2800000&amp;guid=7050299657c061c478f668322a272076&amp;type=3#media_output_24dp_333333_FILL0_wght400_GRAD0_opsz24&quot;);" />
+        <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="settingsButton" style="-unity-background-scale-mode: stretch-to-fill; width: 32px; height: 32px; background-image: url(&quot;project://database/Assets/Icons/settings_24dp_333333_FILL0_wght400_GRAD0_opsz24.png?fileID=2800000&amp;guid=6b952757135a88a4c92262fc7a7bb285&amp;type=3#settings_24dp_333333_FILL0_wght400_GRAD0_opsz24&quot;);" />
+    </ui:VisualElement>
+</ui:UXML>

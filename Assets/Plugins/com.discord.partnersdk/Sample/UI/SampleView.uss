@@ -1,0 +1,67 @@
+.ui-root {
+    flex-grow: 1;
+    background-color: rgb(32, 32, 32);
+    color: rgb(200, 200, 200);
+}
+
+.modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+}
+
+.modal-background {
+    background-color: rgba(0, 0, 0, 0.5);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.modal-content {
+    align-self: center;
+    background-color: rgb(32, 32, 32);
+    color: rgb(200, 200, 200);
+}
+
+Button {
+    color: rgb(0, 0, 0);
+    border-radius: 8px;
+}
+
+#currentStatus {
+    background-color: rgb(64, 64, 64);
+}
+
+#inputBar .unity-base-text-field__label {
+    display: none;
+}
+
+.unity-text-field__input, .unity-base-popup-field__text	{
+    color: rgb(32, 32, 32);
+}
+
+.list-section-header {
+    flex-direction: row;
+}
+
+.list-section-header > Label {
+    flex-grow: 1;
+    -unity-text-align: middle-left;
+}
+
+.voice-control-active {
+    background-color: #ff5252;
+}
+
+.message {
+    white-space: normal;
+}
+
+.log-message {
+    white-space: normal;
+}
