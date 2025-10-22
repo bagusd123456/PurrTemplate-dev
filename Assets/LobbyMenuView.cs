@@ -4,7 +4,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using PurrLobby;
 using PurrLobby.Providers;
+using PurrNet;
+using PurrNet.Steam;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class LobbyMenuView : MonoBehaviour
 {
@@ -72,9 +75,35 @@ public class LobbyMenuView : MonoBehaviour
     [ContextMenu("Create Lobby")]
     private async void CreateLobby()
     {
-        Debug.Log("Creating Lobby");
-        await lobbyManager.CurrentProvider.CreateLobbyAsync(32);
-        Debug.Log("Creating Lobby Finished");
+        try
+        {
+            Debug.Log("Creating Lobby");
+            var ownerSteamId = "";
+            if (NetworkManager.main.transport is SteamTransport steamTransport)
+            {
+                ownerSteamId = Steamworks.SteamUser.GetSteamID().ToString();
+                steamTransport.peerToPeer = true;
+                steamTransport.dedicatedServer = false;
+                steamTransport.address = ownerSteamId;
+            }
+
+            var lobbyProperties = new Dictionary<string, string>()
+            {
+                { "ownerSteamId", ownerSteamId }
+            };
+
+            var currentLobby = await lobbyManager.CurrentProvider.CreateLobbyAsync(32, lobbyProperties);
+            
+            NetworkManager.main.StartHost();
+            NetworkManager.main.sceneModule.LoadSceneAsync("Demo");
+
+            Debug.Log("Creating Lobby Finished.");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError(e);
+            throw;
+        }
     }
 
     private void HandleRefreshView(Lobby arg0)
