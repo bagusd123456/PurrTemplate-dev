@@ -135,7 +135,7 @@ public class OnlineGameExecutor : NetworkBehaviour
     }
 
     [ServerRpc(requireOwnership: false)]
-    public void RequestSceneChange(RPCInfo info = default)
+    public void SendSceneChange(RPCInfo info = default)
     {
         var scene = SceneManager.GetSceneByName(gameplayScene);
         if (scene.isLoaded)
@@ -144,6 +144,20 @@ public class OnlineGameExecutor : NetworkBehaviour
         if (LobbyHandler.networkManager.sceneModule.TryGetSceneID(scene, out var sceneId))
         {
             LobbyHandler.networkManager.scenePlayersModule.AddPlayerToScene(info.sender, sceneId);
+        }
+    }
+
+    [ObserversRpc]
+    public void ClientRequestSceneChange()
+    {
+        var scene = SceneManager.GetSceneByName(gameplayScene);
+        if (scene.isLoaded)
+            return;
+
+        if (LobbyHandler.networkManager.sceneModule.TryGetSceneID(scene, out var sceneId))
+        {
+            if (localPlayer.HasValue)
+                LobbyHandler.networkManager.scenePlayersModule.AddPlayerToScene(localPlayer.Value, sceneId);
         }
     }
 }

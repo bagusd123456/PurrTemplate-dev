@@ -11,6 +11,7 @@ something useful for your game. Best regards, Mena.
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using PurrNet;
 using UnityEngine;
 using UnityEngine.Events;
@@ -175,7 +176,7 @@ public class PrometeoCarController : NetworkBehaviour
         OnDriftStateChanged.RemoveListener(HandleDriftVisual);
     }
 
-    protected override void OnSpawned()
+    protected override async void OnSpawned()
     {
         base.OnSpawned();
         _isEnabled = isOwner;
@@ -183,6 +184,10 @@ public class PrometeoCarController : NetworkBehaviour
 
         if (isOwner)
         {
+            while (CameraFollow.Instance == null)
+            {
+                await Task.Delay(500);
+            }
             CameraFollow.Instance.carTransform = transform;
         }
     }
