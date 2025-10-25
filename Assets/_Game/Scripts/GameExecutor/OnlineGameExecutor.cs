@@ -127,7 +127,7 @@ public class OnlineGameExecutor : NetworkBehaviour
         {
             PurrSceneSettings settings = new()
             {
-                isPublic = true,
+                isPublic = false,
                 mode = LoadSceneMode.Single
             };
 
@@ -147,29 +147,23 @@ public class OnlineGameExecutor : NetworkBehaviour
     [ServerRpc(requireOwnership: false)]
     private void SendSceneChange(RPCInfo info = default)
     {
-        var scene = SceneManager.GetSceneByName(gameplayScene);
-        if (scene.isLoaded)
-            return;
+        if (!isOwner || isServer) return;
 
-        if (LobbyHandler.networkManager.sceneModule.TryGetSceneID(scene, out var sceneId))
+        SceneManager.sceneLoaded -= SceneManager_sceneLoaded;
+        SceneManager.sceneLoaded += SceneManager_sceneLoaded;
+        SceneManager.LoadScene(gameplayScene);
+
+        void SceneManager_sceneLoaded(Scene arg0, LoadSceneMode arg1)
         {
-            LobbyHandler.networkManager.scenePlayersModule.AddPlayerToScene(info.sender, sceneId);
-            Debug.Log($"Assigning player to scene '{info.sender}' sceneID :'{sceneId}' ");
-        }
-    }
+            var scene = SceneManager.GetSceneByName(gameplayScene);
+            if (scene.isLoaded)
+                return;
 
-    [ServerRpc(requireOwnership: false)]
-    public void ClientRequestSceneChange()
-    {
-        Debug.Log($"Client Request Scene Changed called..");
-        if (!isServer) 
-        {
-            Debug.Log($"Client Request, this is not server");
-            return;
+            if (LobbyHandler.networkManager.sceneModule.TryGetSceneID(scene, out var sceneId))
+            {
+                LobbyHandler.networkManager.scenePlayersModule.AddPlayerToScene(info.sender, sceneId);
+                Debug.Log($"Assigning player to scene '{info.sender}' sceneID :'{sceneId}' ");
+            }
         }
-
-        Debug.Log($"Client Request, is server.\n" +
-            $"Calling ServerChangeScene");
-        _ = ServerChangeScene();
     }
 }
