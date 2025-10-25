@@ -164,7 +164,7 @@ public class LobbyViewPanel : View
         if (LobbyHandler.networkManager.isServer)
         {
             await LobbyHandler.SetLobbyStartedAsync();
-            await OnlineGameExecutor.Instance.ChangeScene();
+            await OnlineGameExecutor.Instance.ServerChangeScene();
         }
         LobbyMenuView.Instance.HideView<LobbyLoadingPanel>();
     }

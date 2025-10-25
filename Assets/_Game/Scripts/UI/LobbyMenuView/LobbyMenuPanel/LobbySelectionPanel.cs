@@ -111,7 +111,7 @@ public class LobbySelectionPanel : View
             {
                 if (startedState.Equals("true"))
                 {
-                    SceneManager.LoadScene("Demo");
+                    OnlineGameExecutor.Instance.ClientRequestSceneChange();
                     return;
                 }
             }

@@ -121,7 +121,7 @@ public class OnlineGameExecutor : NetworkBehaviour
         }
     }
 
-    public async Task<AsyncResult> ChangeScene()
+    public async Task<AsyncResult> ServerChangeScene()
     {
         if (isServer)
         {
@@ -130,22 +130,22 @@ public class OnlineGameExecutor : NetworkBehaviour
                 isPublic = true,
                 mode = LoadSceneMode.Single
             };
+
+            Debug.Log($"Loading scene by NetworkManager.sceneModule '{gameplayScene}' ");
             var loadSceneTask = LobbyHandler.networkManager.sceneModule.LoadSceneAsync(gameplayScene, settings);
             while (!loadSceneTask.isDone)
             {
                 await Task.Yield();
             }
+            Debug.Log($"Finished loaded scene by NetworkManager.sceneModule '{gameplayScene}' ");
         }
-        //else
-        //{
-        //    RequestSceneChange();
-        //}
+        SendSceneChange();
 
         return AsyncResult.Success();
     }
 
     [ServerRpc(requireOwnership: false)]
-    public void SendSceneChange(RPCInfo info = default)
+    private void SendSceneChange(RPCInfo info = default)
     {
         var scene = SceneManager.GetSceneByName(gameplayScene);
         if (scene.isLoaded)
@@ -154,14 +154,22 @@ public class OnlineGameExecutor : NetworkBehaviour
         if (LobbyHandler.networkManager.sceneModule.TryGetSceneID(scene, out var sceneId))
         {
             LobbyHandler.networkManager.scenePlayersModule.AddPlayerToScene(info.sender, sceneId);
+            Debug.Log($"Assigning player to scene '{info.sender}' sceneID :'{sceneId}' ");
         }
     }
 
-    [ObserversRpc]
+    [ServerRpc(requireOwnership: false)]
     public void ClientRequestSceneChange()
     {
-        if (!isServer) return;
-        _ = ChangeScene();
-        SendSceneChange();
+        Debug.Log($"Client Request Scene Changed called..");
+        if (!isServer) 
+        {
+            Debug.Log($"Client Request, this is not server");
+            return;
+        }
+
+        Debug.Log($"Client Request, is server.\n" +
+            $"Calling ServerChangeScene");
+        _ = ServerChangeScene();
     }
 }
