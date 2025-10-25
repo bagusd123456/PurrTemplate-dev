@@ -110,7 +110,7 @@ public class LobbySelectionPanel : View
             {
                 if (startedState.Equals("true"))
                 {
-                    await OnlineGameExecutor.Instance.ChangeScene();
+                    OnlineGameExecutor.Instance.ClientRequestSceneChange();
                     return;
                 }
             }

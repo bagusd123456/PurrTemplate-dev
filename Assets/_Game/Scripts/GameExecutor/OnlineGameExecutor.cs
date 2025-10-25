@@ -150,14 +150,8 @@ public class OnlineGameExecutor : NetworkBehaviour
     [ObserversRpc]
     public void ClientRequestSceneChange()
     {
-        var scene = SceneManager.GetSceneByName(gameplayScene);
-        if (scene.isLoaded)
-            return;
-
-        if (LobbyHandler.networkManager.sceneModule.TryGetSceneID(scene, out var sceneId))
-        {
-            if (localPlayer.HasValue)
-                LobbyHandler.networkManager.scenePlayersModule.AddPlayerToScene(localPlayer.Value, sceneId);
-        }
+        if (!isServer) return;
+        _ = ChangeScene();
+        SendSceneChange();
     }
 }
