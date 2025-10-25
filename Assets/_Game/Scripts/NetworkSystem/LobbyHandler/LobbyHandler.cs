@@ -15,9 +15,10 @@ public class LobbyHandler
     public static LobbyManager lobbyManager;
     public static NetworkManager networkManager;
 
-    public LobbyHandler(LobbyManager lobbyManager)
+    public LobbyHandler(LobbyManager lobbyManager, NetworkManager networkManager)
     {
         LobbyHandler.lobbyManager = lobbyManager;
+        LobbyHandler.networkManager = networkManager;
     }
 
     public async Task<AsyncResult> Init()
