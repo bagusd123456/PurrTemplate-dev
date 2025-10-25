@@ -33,6 +33,11 @@ public class OnlineGameExecutor : NetworkBehaviour
 
     private void HandlePlayerSceneUnloaded(PlayerID player, SceneID scene, bool asServer)
     {
+        if (!isServer)
+        {
+            return;
+        }
+
         var gameplaySceneData = SceneManager.GetSceneByName(gameplayScene);
         if (!gameplaySceneData.IsValid() && !gameplaySceneData.isLoaded)
         {
@@ -54,6 +59,11 @@ public class OnlineGameExecutor : NetworkBehaviour
 
     private void HandlePlayerSceneLoaded(PlayerID player, SceneID scene, bool asServer)
     {
+        if (!isServer)
+        {
+            return;
+        }
+
         var gameplaySceneData = SceneManager.GetSceneByName(gameplayScene);
         if (!gameplaySceneData.IsValid() && !gameplaySceneData.isLoaded)
         {
@@ -104,8 +114,8 @@ public class OnlineGameExecutor : NetworkBehaviour
             return;
         }
 
-        if (spawnedCarList.TryGetValue(player, out var playerObject)) 
-        { 
+        if (spawnedCarList.TryGetValue(player, out var playerObject))
+        {
             spawnedCarList.Remove(player);
             Destroy(playerObject);
         }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class LobbySelectionPanel : View
@@ -110,7 +111,7 @@ public class LobbySelectionPanel : View
             {
                 if (startedState.Equals("true"))
                 {
-                    OnlineGameExecutor.Instance.ClientRequestSceneChange();
+                    SceneManager.LoadScene("Demo");
                     return;
                 }
             }
