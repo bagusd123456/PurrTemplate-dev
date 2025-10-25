@@ -59,7 +59,7 @@ public class LobbyHandler
         try
         {
             var steamTransport = networkManager.transport as SteamTransport;
-            if (steamTransport != null)
+            if (steamTransport == null)
             {
                 errorMessage = $"[LobbyHandler] Failed to create lobby.\n" +
                                $"Cannot find SteamTransport, please check the networkManager.";
@@ -102,7 +102,7 @@ public class LobbyHandler
         {
             currentLobby = await lobbyManager.CurrentProvider.JoinLobbyAsync(roomId);
             var steamTransport = networkManager.transport as SteamTransport;
-            if (steamTransport != null)
+            if (steamTransport == null)
             {
                 errorMessage = $"[LobbyHandler] Failed to join lobby.\n" +
                                $"Cannot find SteamTransport, please check the networkManager.";
@@ -151,7 +151,7 @@ public class LobbyHandler
         try
         {
             var steamTransport = networkManager.transport as SteamTransport;
-            if (steamTransport != null)
+            if (steamTransport == null)
             {
                 errorMessage = $"[LobbyHandler] Failed to join lobby.\n" +
                                $"Cannot find SteamTransport, please check the networkManager.";
