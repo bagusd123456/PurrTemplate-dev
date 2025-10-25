@@ -2,16 +2,18 @@ using PurrLobby;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class LobbyViewPanel : View
 {
-    [SerializeField] private TMP_Text lobbyIdText;
+    [SerializeField] private CodeButton lobbyCode;
     [SerializeField] private Button setReadyButton;
     [SerializeField] private Button leaveLobbyButton;
     [SerializeField] private FriendEntry friendStatusPrefab;
@@ -23,6 +25,7 @@ public class LobbyViewPanel : View
     private List<MemberEntry> lobbyEntryList = new();
 
     private bool IsReady;
+    private bool IsStarting;
 
     private float pullFriendsIntervalMinutes = 3.0f;
 
@@ -115,7 +118,7 @@ public class LobbyViewPanel : View
 
     private void HandleRoomUpdated(Lobby currentLobby)
     {
-        lobbyIdText.text = currentLobby.LobbyId;
+        lobbyCode.Init(currentLobby.LobbyId);
         foreach (var memberEntry in lobbyEntryList)
         {
             memberEntry.gameObject.SetActive(false);
@@ -134,14 +137,27 @@ public class LobbyViewPanel : View
             memberEntry.Init(user);
             memberEntry.gameObject.SetActive(true);
         }
+
+        var isMemberReady = currentLobby.Members.All(x => x.IsReady);
+        if (isMemberReady)
+        {
+            HandlePlayGame();
+        }
     }
 
     private async void HandlePlayGame()
     {
+        if (IsStarting) 
+        {
+            Debug.Log($"Play Game already triggered.");
+            return;
+        }
+
+        Debug.Log("Starting Game...");
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
         loadingPanel.Set($"Starting Game...");
+        await OnlineGameExecutor.Instance.ChangeScene();
         LobbyMenuView.Instance.HideView<LobbyLoadingPanel>();
-
     }
 
     private async void HandleSetReady()

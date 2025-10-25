@@ -1,13 +1,15 @@
 using PurrLobby;
 using PurrNet;
+using PurrNet.Steam;
+using QFSW.QC;
 using Steamworks;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
-using QFSW.QC;
+using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
-using PurrNet.Steam;
-using System.Data;
 using ConnectionState = PurrNet.Transports.ConnectionState;
 
 public class LobbyHandler
@@ -129,7 +131,7 @@ public class LobbyHandler
         }
 
         return AsyncResult<Lobby>.Success(currentLobby);
-        
+
     }
 
     [Command]
@@ -315,14 +317,21 @@ public class LobbyHandler
 
     private static async Task<AsyncResult> StartClientAsync(SteamTransport steamTransport, string ownerSteamAccountId)
     {
+        var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
-        networkManager.onClientConnectionState += ListenConnectionState;
 
-        steamTransport.address = ownerSteamAccountId;
-        networkManager.StartClient();
-        var result = await tcs.Task;
-        networkManager.onClientConnectionState -= ListenConnectionState;
-        return result;
+        while (!cts.IsCancellationRequested)
+        {
+            networkManager.onClientConnectionState += ListenConnectionState;
+
+            steamTransport.address = ownerSteamAccountId;
+            networkManager.StartClient();
+            var result = await tcs.Task;
+            networkManager.onClientConnectionState -= ListenConnectionState;
+            return result;
+        }
+
+        return AsyncResult.Fail($"[LobbyHandler] StartClientAsync Request Time Out.");
 
         void ListenConnectionState(ConnectionState state)
         {
@@ -342,14 +351,21 @@ public class LobbyHandler
 
     private static async Task<AsyncResult> StopClientAsync(SteamTransport steamTransport)
     {
+        using var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
-        networkManager.onClientConnectionState += ListenConnectionState;
 
-        steamTransport.address = "";
-        networkManager.StopClient();
-        var result = await tcs.Task;
-        networkManager.onClientConnectionState -= ListenConnectionState;
-        return result;
+        while (!cts.IsCancellationRequested)
+        {
+            networkManager.onClientConnectionState += ListenConnectionState;
+
+            steamTransport.address = "";
+            networkManager.StopClient();
+            var result = await tcs.Task;
+            networkManager.onClientConnectionState -= ListenConnectionState;
+            return result;
+        }
+
+        return AsyncResult.Fail($"[LobbyHandler] StopClientAsync Request Time Out.");
 
         void ListenConnectionState(ConnectionState state)
         {
@@ -363,20 +379,27 @@ public class LobbyHandler
 
     private static async Task<AsyncResult> StartClientServerAsync(SteamTransport steamTransport, string steamAccountId)
     {
+        using var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
-        networkManager.onServerConnectionState += ListenConnectionState;
 
-        steamTransport.address = steamAccountId;
-        networkManager.StartServer();
-        var startServerResult = await tcs.Task;
-        networkManager.onServerConnectionState -= ListenConnectionState;
-        if (startServerResult.IsFail)
+        while (!cts.IsCancellationRequested)
         {
-            return startServerResult;
+            networkManager.onServerConnectionState += ListenConnectionState;
+
+            steamTransport.address = steamAccountId;
+            networkManager.StartServer();
+            var startServerResult = await tcs.Task;
+            networkManager.onServerConnectionState -= ListenConnectionState;
+            if (startServerResult.IsFail)
+            {
+                return startServerResult;
+            }
+
+            var startClientResult = await StartClientAsync(steamTransport, steamAccountId);
+            return startClientResult;
         }
-        
-        var startClientResult = await StartClientAsync(steamTransport, steamAccountId);
-        return startClientResult;
+
+        return AsyncResult.Fail($"[LobbyHandler] StartClientServerAsync Request Time Out.");
 
         void ListenConnectionState(ConnectionState state)
         {
@@ -396,20 +419,28 @@ public class LobbyHandler
 
     private static async Task<AsyncResult> StopClientServerAsync(SteamTransport steamTransport)
     {
+        var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
-        networkManager.onServerConnectionState += ListenConnectionState;
 
-        steamTransport.address = "";
-        networkManager.StopServer();
-        var stopServerResult = await tcs.Task;
-        networkManager.onServerConnectionState -= ListenConnectionState;
-        if (stopServerResult.IsFail)
+        while (!cts.IsCancellationRequested)
         {
+            var stopClientResult = await StopClientAsync(steamTransport);
+            if (stopClientResult.IsFail)
+            {
+                return stopClientResult;
+            }
+
+            networkManager.onServerConnectionState += ListenConnectionState;
+
+            steamTransport.address = "";
+            networkManager.StopServer();
+
+            var stopServerResult = await tcs.Task;
+            networkManager.onServerConnectionState -= ListenConnectionState;
             return stopServerResult;
         }
 
-        var stopClientResult = await StopClientAsync(steamTransport);
-        return stopClientResult;
+        return AsyncResult.Fail($"[LobbyHandler] StopClientServer Request Time Out.");
 
         void ListenConnectionState(ConnectionState state)
         {
