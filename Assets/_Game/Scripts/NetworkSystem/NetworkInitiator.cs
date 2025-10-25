@@ -22,7 +22,7 @@ public class NetworkInitiator : MonoBehaviour
 
         Instance = this;
 
-        LobbyHandler = new LobbyHandler(lobbyManager);
+        LobbyHandler = new LobbyHandler(lobbyManager, networkManager);
         await LobbyHandler.Init();
     }
 }
