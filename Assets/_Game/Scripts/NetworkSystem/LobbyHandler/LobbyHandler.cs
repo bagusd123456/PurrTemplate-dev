@@ -282,7 +282,7 @@ public class LobbyHandler
         try
         {
             await lobbyManager.CurrentProvider.SetLobbyStartedAsync();
-            currentLobby.Properties.Add("isStarted", "true");
+            currentLobby.Properties["isStarted"] = "true";
         }
         catch (Exception e)
         {
