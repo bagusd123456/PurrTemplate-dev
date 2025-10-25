@@ -103,6 +103,18 @@ public class LobbySelectionPanel : View
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
         loadingPanel.Set("Joining Lobby...");
         var createLobbyTask = await LobbyHandler.JoinLobbyByIdAsync(targetLobby.LobbyId);
+        if (createLobbyTask.IsSuccess)
+        {
+            var lobby = createLobbyTask.Result;
+            if (lobby.Properties.TryGetValue("isStarted", out var startedState))
+            {
+                if (startedState.Equals("true"))
+                {
+                    await OnlineGameExecutor.Instance.ChangeScene();
+                    return;
+                }
+            }
+        }
         LobbyMenuView.Instance.ShowView<LobbyViewPanel>();
     }
 }

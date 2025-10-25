@@ -160,6 +160,7 @@ public class LobbyViewPanel : View
         Debug.Log("Starting Game...");
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
         loadingPanel.Set($"Starting Game...");
+        await LobbyHandler.lobbyManager.CurrentProvider.SetLobbyStartedAsync();
         await OnlineGameExecutor.Instance.ChangeScene();
         LobbyMenuView.Instance.HideView<LobbyLoadingPanel>();
     }

@@ -25,8 +25,8 @@ public class OnlineGameExecutor : NetworkBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        NetworkManager.main.onPlayerLoadedScene += HandlePlayerSceneLoaded;
-        NetworkManager.main.onPlayerUnloadedScene += HandlePlayerSceneUnloaded;
+        //NetworkManager.main.onPlayerLoadedScene += HandlePlayerSceneLoaded;
+        //NetworkManager.main.onPlayerUnloadedScene += HandlePlayerSceneUnloaded;
         NetworkManager.main.onPlayerJoinedScene += HandlePlayerSceneLoaded;
         NetworkManager.main.onPlayerLeftScene += HandlePlayerSceneUnloaded;
     }
@@ -90,7 +90,11 @@ public class OnlineGameExecutor : NetworkBehaviour
         var spawnedCar = Instantiate(carPrefab.gameObject, position, Quaternion.identity);
         spawnedCarList[player] = spawnedCar;
         NetworkManager.main.Spawn(spawnedCar);
-        carPrefab.GiveOwnership(player);
+
+        if (spawnedCar.TryGetComponent<NetworkIdentity>(out var networkIdentity))
+        {
+            networkIdentity.GiveOwnership(player);
+        }
     }
 
     private void DespawnPlayer(PlayerID player)

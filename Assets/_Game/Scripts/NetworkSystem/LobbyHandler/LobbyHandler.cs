@@ -70,6 +70,7 @@ public class LobbyHandler
 
             var steamAccountId = SteamUser.GetSteamID().ToString();
             targetRoomProperties["steamAccountId"] = steamAccountId;
+            targetRoomProperties["isStarted"] = "false";
             createdLobby = await lobbyManager.CurrentProvider.CreateLobbyAsync(targetMaxPlayer, targetRoomProperties);
 
             var startServerTask = await StartClientServerAsync(steamTransport, steamAccountId);
@@ -281,6 +282,7 @@ public class LobbyHandler
         try
         {
             await lobbyManager.CurrentProvider.SetLobbyStartedAsync();
+            currentLobby.Properties.Add("isStarted", "true");
         }
         catch (Exception e)
         {
