@@ -1,11 +1,31 @@
 {
   "dependencies": {
+    "com.merry-yellow.code-assist": {
+      "version": "file:com.merry-yellow.code-assist",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.rlabrecque.steamworks.net": {
       "version": "https://github.com/rlabrecque/Steamworks.NET.git?path=/com.rlabrecque.steamworks.net#2024.8.0",
       "depth": 0,
       "source": "git",
       "dependencies": {},
       "hash": "a2fc889ab2672981ec3e6225d551d86ce6923121"
+    },
+    "com.unity.addressables": {
+      "version": "1.22.3",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.assetbundle": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0",
+        "com.unity.modules.imageconversion": "1.0.0",
+        "com.unity.modules.unitywebrequest": "1.0.0",
+        "com.unity.scriptablebuildpipeline": "1.21.25",
+        "com.unity.modules.unitywebrequestassetbundle": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
     },
     "com.unity.ai.navigation": {
       "version": "1.1.7",
@@ -119,6 +139,13 @@
         "com.unity.render-pipelines.core": "14.0.10"
       }
     },
+    "com.unity.scriptablebuildpipeline": {
+      "version": "1.21.25",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.searcher": {
       "version": "4.9.2",
       "depth": 2,
@@ -187,14 +214,14 @@
       "url": "https://packages.unity.com"
     },
     "dev.purrnet.purrnet": {
-      "version": "https://github.com/PurrNet/PurrNet.git?path=/Assets/PurrNet#dev",
+      "version": "https://github.com/PurrNet/PurrNet.git?path=/Assets/PurrNet#release",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.unity.nuget.mono-cecil": "1.11.4",
         "com.unity.nuget.newtonsoft-json": "3.2.1"
       },
-      "hash": "b10f81c83453d81c2b268c2dca163ec4f5cb067e"
+      "hash": "497f80e1afa0cd4e9ae4161f1763ac645862f85a"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
