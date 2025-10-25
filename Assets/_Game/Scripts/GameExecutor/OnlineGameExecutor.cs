@@ -25,8 +25,8 @@ public class OnlineGameExecutor : NetworkBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        //NetworkManager.main.onPlayerLoadedScene += HandlePlayerSceneLoaded;
-        //NetworkManager.main.onPlayerUnloadedScene += HandlePlayerSceneUnloaded;
+        NetworkManager.main.onPlayerLoadedScene += HandlePlayerSceneLoaded;
+        NetworkManager.main.onPlayerUnloadedScene += HandlePlayerSceneUnloaded;
         NetworkManager.main.onPlayerJoinedScene += HandlePlayerSceneLoaded;
         NetworkManager.main.onPlayerLeftScene += HandlePlayerSceneUnloaded;
     }
@@ -85,7 +85,9 @@ public class OnlineGameExecutor : NetworkBehaviour
             return;
         }
 
-        var spawnedCar = Instantiate(carPrefab.gameObject);
+        var position = new Vector3(1, 0, 1) * Random.Range(0, 10);
+
+        var spawnedCar = Instantiate(carPrefab.gameObject, position, Quaternion.identity);
         spawnedCarList[player] = spawnedCar;
         NetworkManager.main.Spawn(spawnedCar);
         carPrefab.GiveOwnership(player);
@@ -107,16 +109,23 @@ public class OnlineGameExecutor : NetworkBehaviour
 
     public async Task<AsyncResult> ChangeScene()
     {
-        PurrSceneSettings settings = new()
+        if (isServer)
         {
-            isPublic = true,
-            mode = LoadSceneMode.Single
-        };
-        var loadSceneTask = LobbyHandler.networkManager.sceneModule.LoadSceneAsync(gameplayScene, settings);
-        while (!loadSceneTask.isDone)
-        {
-            await Task.Yield();
+            PurrSceneSettings settings = new()
+            {
+                isPublic = true,
+                mode = LoadSceneMode.Single
+            };
+            var loadSceneTask = LobbyHandler.networkManager.sceneModule.LoadSceneAsync(gameplayScene, settings);
+            while (!loadSceneTask.isDone)
+            {
+                await Task.Yield();
+            }
         }
+        //else
+        //{
+        //    RequestSceneChange();
+        //}
 
         return AsyncResult.Success();
     }

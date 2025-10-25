@@ -39,6 +39,10 @@ public class LobbyViewPanel : View
 
     private void OnEnable()
     {
+        if (LobbyHandler.lobbyManager.CurrentLobby.IsValid)
+        {
+            HandleRoomUpdated(LobbyHandler.lobbyManager.CurrentLobby);
+        }
         LobbyHandler.lobbyManager.OnRoomUpdated.AddListener(HandleRoomUpdated);
         LobbyHandler.lobbyManager.OnFriendListPulled.AddListener(HandleFriendListPulled);
 
