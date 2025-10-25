@@ -1,0 +1,151 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6022549128062728994
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 357196949720081989}
+  - component: {fileID: 5056359655081108189}
+  - component: {fileID: 2721844939942210686}
+  - component: {fileID: 5918337068757129126}
+  - component: {fileID: 2195692995041031240}
+  m_Layer: 0
+  m_Name: NetworkManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &357196949720081989
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6022549128062728994}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 960, y: 540, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5056359655081108189
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6022549128062728994}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baacc2bfe126d544691d4f39fa3785f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _stopPlayingOnDisconnect: 0
+  _startServerFlags: 0
+  _startClientFlags: 0
+  _cookieScope: 1
+  _dontDestroyOnLoad: 1
+  _transport: {fileID: 2721844939942210686}
+  _networkPrefabs: {fileID: 11400000, guid: 4d50d267c9f564f4abc1e5dd9c63cc15, type: 2}
+  _networkAssets: {fileID: 11400000, guid: 9db4209b0a56c9e4eb7f4fbf3173eb84, type: 2}
+  _networkRules: {fileID: 11400000, guid: d8799083b96579a42b8b2d03e4ceae98, type: 2}
+  _visibilityRules: {fileID: 11400000, guid: 8f014a5bd8dc68646a2a3c0b18c5bbd8, type: 2}
+  _authenticator: {fileID: 0}
+  _tickRate: 20
+  _patchLingeringProcessBug: 0
+--- !u!114 &2721844939942210686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6022549128062728994}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ccc454d6a19ac140b15f8d619d0fb5e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _serverPort: 5003
+  _dedicatedServer: 0
+  _peerToPeer: 1
+  _address: 127.0.0.1
+--- !u!114 &5918337068757129126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6022549128062728994}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 018749c98c25d47418932e090d8f8fbf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentProvider: {fileID: 2195692995041031240}
+  createRoomArgs:
+    maxPlayers: 5
+    roomProperties:
+      keys: []
+      values: []
+      stringKeys: []
+      stringValues: []
+  searchRoomArgs:
+    keys: []
+    values: []
+    stringKeys: []
+    stringValues: []
+  OnRoomJoined:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRoomJoinFailed:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRoomLeft:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRoomUpdated:
+    m_PersistentCalls:
+      m_Calls: []
+  OnPlayerListUpdated:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRoomSearchResults:
+    m_PersistentCalls:
+      m_Calls: []
+  OnFriendListPulled:
+    m_PersistentCalls:
+      m_Calls: []
+  OnAllReady:
+    m_PersistentCalls:
+      m_Calls: []
+  OnError:
+    m_PersistentCalls:
+      m_Calls: []
+  onInitialized:
+    m_PersistentCalls:
+      m_Calls: []
+  onShutdown:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &2195692995041031240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6022549128062728994}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15156e7f57bff964485891eba8344bbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lobbyType: 2
+  maxLobbiesToFind: 10
+  handleSteamInit: 1

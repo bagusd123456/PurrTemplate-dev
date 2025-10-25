@@ -16,7 +16,7 @@ namespace PurrLobby
 
         public void Init(LobbyUser user)
         {
-            _defaultColor = userName.color;
+            _defaultColor = Color.white;
             _memberId = user.Id;
             avatar.texture = user.Avatar;
             userName.text = user.DisplayName;

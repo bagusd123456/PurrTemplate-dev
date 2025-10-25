@@ -18,7 +18,7 @@ namespace PurrLobby
             foreach (var room in rooms)
             {
                 var entry = Instantiate(lobbyEntryPrefab, content);
-                entry.Init(room, lobbyManager);
+                entry.Init(room);
             }
         }
     }
