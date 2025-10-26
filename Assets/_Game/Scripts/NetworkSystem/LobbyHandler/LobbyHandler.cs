@@ -117,7 +117,7 @@ public class LobbyHandler
                 Debug.LogError(errorMessage);
             }
 
-            var startClientTask = await StartClientAsync(networkTransport);
+            var startClientTask = await StartClientAsync(networkTransport, ownerSteamAccountId);
             if (startClientTask.IsFail)
             {
                 Debug.LogError(startClientTask.Message);
@@ -320,7 +320,7 @@ public class LobbyHandler
 
     #region Server Execution Handler
 
-    private static async Task<AsyncResult> StartClientAsync(GenericTransport networkTransport)
+    private static async Task<AsyncResult> StartClientAsync(GenericTransport networkTransport, string targetAddress = "")
     {
         var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
@@ -329,12 +329,10 @@ public class LobbyHandler
         {
             if (networkTransport is SteamTransport steamTransport)
             {
-                if (!lobbyManager.CurrentLobby.Properties.TryGetValue("steamAccountId", out var steamAccountId))
+                if (!string.IsNullOrWhiteSpace(targetAddress))
                 {
-                    return AsyncResult.Fail("[LobbyHandler] Cannot connect to Host.\n" +
-                        "Host steamAccountId not found.");
+                    steamTransport.address = targetAddress;
                 }
-                steamTransport.address = steamAccountId;
             }
 
             networkManager.onClientConnectionState += ListenConnectionState;
