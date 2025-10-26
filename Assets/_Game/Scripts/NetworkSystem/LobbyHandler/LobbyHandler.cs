@@ -1,6 +1,7 @@
 using PurrLobby;
 using PurrNet;
 using PurrNet.Steam;
+using PurrNet.Transports;
 using QFSW.QC;
 using Steamworks;
 using System;
@@ -60,26 +61,21 @@ public class LobbyHandler
 
         try
         {
-            var steamTransport = networkManager.transport as SteamTransport;
-            if (steamTransport == null)
+            var networkTransport = networkManager.transport;
+            if (networkTransport is SteamTransport steamTransport)
             {
-                errorMessage = $"[LobbyHandler] Failed to create lobby.\n" +
-                               $"Cannot find SteamTransport, please check the networkManager.";
-                Debug.LogError(errorMessage);
+                var steamAccountId = SteamUser.GetSteamID().ToString();
+                targetRoomProperties["steamAccountId"] = steamAccountId;
             }
 
-            var steamAccountId = SteamUser.GetSteamID().ToString();
-            targetRoomProperties["steamAccountId"] = steamAccountId;
             targetRoomProperties["isStarted"] = "false";
             createdLobby = await lobbyManager.CurrentProvider.CreateLobbyAsync(targetMaxPlayer, targetRoomProperties);
-
-            var startServerTask = await StartClientServerAsync(steamTransport, steamAccountId);
+            var startServerTask = await StartClientServerAsync(networkTransport);
             if (startServerTask.IsFail)
             {
                 Debug.LogError(startServerTask.Message);
                 return AsyncResult<Lobby>.Fail(startServerTask.Message);
             }
-
         }
         catch (Exception e)
         {
@@ -101,13 +97,7 @@ public class LobbyHandler
         try
         {
             currentLobby = await lobbyManager.CurrentProvider.JoinLobbyAsync(roomId);
-            var steamTransport = networkManager.transport as SteamTransport;
-            if (steamTransport == null)
-            {
-                errorMessage = $"[LobbyHandler] Failed to join lobby.\n" +
-                               $"Cannot find SteamTransport, please check the networkManager.";
-                Debug.LogError(errorMessage);
-            }
+            var networkTransport = networkManager.transport;
 
             if (!currentLobby.Properties.TryGetValue("steamAccountId", out var ownerSteamAccountId))
             {
@@ -116,7 +106,7 @@ public class LobbyHandler
                 Debug.LogError(errorMessage);
             }
 
-            var startClientTask = await StartClientAsync(steamTransport, ownerSteamAccountId);
+            var startClientTask = await StartClientAsync(networkTransport);
             if (startClientTask.IsFail)
             {
                 Debug.LogError(startClientTask.Message);
@@ -206,6 +196,7 @@ public class LobbyHandler
 
         var localLobbyUser = currentLobby.Members.Find(x => x.Id == localUserId);
         targetUserId = localLobbyUser.Id;
+        localLobbyUser.IsReady = targetState;
 
         var setReadyTask = await SetIsReadyAsync(targetUserId, targetState);
         return setReadyTask;
@@ -283,6 +274,7 @@ public class LobbyHandler
         {
             await lobbyManager.CurrentProvider.SetLobbyStartedAsync();
             currentLobby.Properties["isStarted"] = "true";
+            await lobbyManager.CurrentProvider.SetLobbyDataAsync("isStarted", "true");
         }
         catch (Exception e)
         {
@@ -317,16 +309,20 @@ public class LobbyHandler
 
     #region Server Execution Handler
 
-    private static async Task<AsyncResult> StartClientAsync(SteamTransport steamTransport, string ownerSteamAccountId)
+    private static async Task<AsyncResult> StartClientAsync(GenericTransport networkTransport)
     {
         var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
 
         while (!cts.IsCancellationRequested)
         {
-            networkManager.onClientConnectionState += ListenConnectionState;
+            if (networkTransport is SteamTransport steamTransport)
+            {
+                var steamAccountId = SteamUser.GetSteamID().ToString();
+                steamTransport.address = steamAccountId;
+            }
 
-            steamTransport.address = ownerSteamAccountId;
+            networkManager.onClientConnectionState += ListenConnectionState;
             networkManager.StartClient();
             var result = await tcs.Task;
             networkManager.onClientConnectionState -= ListenConnectionState;
@@ -351,16 +347,19 @@ public class LobbyHandler
         }
     }
 
-    private static async Task<AsyncResult> StopClientAsync(SteamTransport steamTransport)
+    private static async Task<AsyncResult> StopClientAsync(GenericTransport networkTransport)
     {
         using var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
 
         while (!cts.IsCancellationRequested)
         {
-            networkManager.onClientConnectionState += ListenConnectionState;
+            if (networkTransport is SteamTransport steamTransport)
+            {
+                steamTransport.address = "";
+            }
 
-            steamTransport.address = "";
+            networkManager.onClientConnectionState += ListenConnectionState;
             networkManager.StopClient();
             var result = await tcs.Task;
             networkManager.onClientConnectionState -= ListenConnectionState;
@@ -379,16 +378,20 @@ public class LobbyHandler
         }
     }
 
-    private static async Task<AsyncResult> StartClientServerAsync(SteamTransport steamTransport, string steamAccountId)
+    private static async Task<AsyncResult> StartClientServerAsync(GenericTransport networkTransport)
     {
         using var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
 
         while (!cts.IsCancellationRequested)
         {
-            networkManager.onServerConnectionState += ListenConnectionState;
+            if (networkTransport is SteamTransport steamTransport)
+            {
+                var steamAccountId = SteamUser.GetSteamID().ToString();
+                steamTransport.address = steamAccountId;
+            }
 
-            steamTransport.address = steamAccountId;
+            networkManager.onServerConnectionState += ListenConnectionState;
             networkManager.StartServer();
             var startServerResult = await tcs.Task;
             networkManager.onServerConnectionState -= ListenConnectionState;
@@ -397,7 +400,7 @@ public class LobbyHandler
                 return startServerResult;
             }
 
-            var startClientResult = await StartClientAsync(steamTransport, steamAccountId);
+            var startClientResult = await StartClientAsync(networkTransport);
             return startClientResult;
         }
 
@@ -419,24 +422,25 @@ public class LobbyHandler
         }
     }
 
-    private static async Task<AsyncResult> StopClientServerAsync(SteamTransport steamTransport)
+    private static async Task<AsyncResult> StopClientServerAsync(GenericTransport networkTransport)
     {
         var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
 
         while (!cts.IsCancellationRequested)
         {
-            var stopClientResult = await StopClientAsync(steamTransport);
+            if (networkTransport is SteamTransport steamTransport)
+            {
+                steamTransport.address = "";
+            }
+
+            var stopClientResult = await StopClientAsync(networkTransport);
             if (stopClientResult.IsFail)
             {
                 return stopClientResult;
             }
-
             networkManager.onServerConnectionState += ListenConnectionState;
-
-            steamTransport.address = "";
             networkManager.StopServer();
-
             var stopServerResult = await tcs.Task;
             networkManager.onServerConnectionState -= ListenConnectionState;
             return stopServerResult;

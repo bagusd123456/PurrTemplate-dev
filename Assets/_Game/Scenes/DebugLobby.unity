@@ -5852,14 +5852,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Quantum Console (SRP)
       objectReference: {fileID: 0}
-    - target: {fileID: 4735113768296962263, guid: 2da3dcc22749e7f4280737786d898334, type: 3}
-      propertyPath: _activateOnStartup
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4735113768296962263, guid: 2da3dcc22749e7f4280737786d898334, type: 3}
-      propertyPath: _initialiseOnStartup
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4845161671150009267, guid: 2da3dcc22749e7f4280737786d898334, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -6009,14 +6001,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2195692995041031240, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
-      propertyPath: handleSteamInit
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5918337068757129126, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
-      propertyPath: currentProvider
-      value: 
-      objectReference: {fileID: 6613091791801155314}
     - target: {fileID: 6022549128062728994, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
       propertyPath: m_Name
       value: NetworkManager
@@ -6024,17 +6008,14 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 6022549128062728994, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6613091791801155317}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
 --- !u!114 &6613091791801155311 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5918337068757129126, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
   m_PrefabInstance: {fileID: 6613091791801155310}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6613091791801155315}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 018749c98c25d47418932e090d8f8fbf, type: 3}
@@ -6050,46 +6031,12 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5056359655081108189, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
   m_PrefabInstance: {fileID: 6613091791801155310}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6613091791801155315}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: baacc2bfe126d544691d4f39fa3785f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &6613091791801155314 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2195692995041031240, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
-  m_PrefabInstance: {fileID: 6613091791801155310}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6613091791801155315}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15156e7f57bff964485891eba8344bbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!1 &6613091791801155315 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6022549128062728994, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
-  m_PrefabInstance: {fileID: 6613091791801155310}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &6613091791801155317
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6613091791801155315}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ef882a0e84c58df4885b0e1e59320b49, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  checkInterval: 0.33
-  placement: 1
-  _displayType: -1
-  _displayTarget: 6
-  fontSize: 13
-  textColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
