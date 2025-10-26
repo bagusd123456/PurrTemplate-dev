@@ -17,6 +17,7 @@ public class LobbyHandler
 {
     public static LobbyManager lobbyManager;
     public static NetworkManager networkManager;
+    public static Task steamCallbackTask;
 
     public LobbyHandler(LobbyManager lobbyManager, NetworkManager networkManager)
     {
@@ -37,7 +38,7 @@ public class LobbyHandler
                 throw new Exception($"[LobbyHandler] Steam Failed to init.\n" +
                                     $"{initException}");
             }
-            SteamAPI.RunCallbacks();
+            steamCallbackTask = RunSteamCallback();
             await lobbyManager.CurrentProvider.InitializeAsync();
         }
         catch (Exception e)
@@ -49,6 +50,16 @@ public class LobbyHandler
         }
 
         return AsyncResult.Success();
+    }
+
+    private async Task RunSteamCallback()
+    {
+        var runCallbacks = true;
+        while (runCallbacks)
+        {
+            SteamAPI.RunCallbacks();
+            await Task.Delay(16);
+        }
     }
 
     [Command]
@@ -318,7 +329,11 @@ public class LobbyHandler
         {
             if (networkTransport is SteamTransport steamTransport)
             {
-                var steamAccountId = SteamUser.GetSteamID().ToString();
+                if (!lobbyManager.CurrentLobby.Properties.TryGetValue("steamAccountId", out var steamAccountId))
+                {
+                    return AsyncResult.Fail("[LobbyHandler] Cannot connect to Host.\n" +
+                        "Host steamAccountId not found.");
+                }
                 steamTransport.address = steamAccountId;
             }
 

@@ -133,7 +133,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lobbyType: 2
   maxLobbiesToFind: 10
-  handleSteamInit: 1
+  handleSteamInit: 0
 --- !u!114 &4568614055171041761
 MonoBehaviour:
   m_ObjectHideFlags: 0
