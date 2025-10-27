@@ -1,13 +1,13 @@
+using JetBrains.Annotations;
+using NyxMachina.Shared.EventFramework;
+using NyxMachina.Shared.EventFramework.Core.Payloads;
+using PurrNet;
+using QFSW.QC;
 using Steamworks;
-using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
-using NyxMachina.Shared.EventFramework;
-using NyxMachina.Shared.EventFramework.Core.Payloads;
-using QFSW.QC;
 using UnityEngine;
 
 public class ChatRoomHandler
@@ -38,9 +38,11 @@ public class ChatRoomHandler
     public struct VoiceChatDataReceived : IPayload
     {
         public AudioClip VoiceAudio;
-        public VoiceChatDataReceived(AudioClip voiceAudio)
+        public string SenderPlayerId;
+        public VoiceChatDataReceived(AudioClip voiceAudio, string senderId)
         {
             VoiceAudio = voiceAudio;
+            SenderPlayerId = senderId;
         }
     }
 
@@ -51,6 +53,8 @@ public class ChatRoomHandler
         public int Channels;
         public int Samples;
     }
+
+    public static SyncEvent<VoiceChatDataReceived> VoiceChatReceivedSyncEvent = new();
 
     // Callbacks
     private Callback<LobbyChatMsg_t> _lobbyChatMsg;
@@ -124,7 +128,8 @@ public class ChatRoomHandler
                 clip.SetData(data.AudioData, 0);
 
                 // Publish the event with the valid AudioClip
-                EVENT.Publish(new VoiceChatDataReceived(clip));
+                EVENT.Publish(new VoiceChatDataReceived(clip, SteamUser.GetSteamID().ToString()));
+                VoiceChatReceivedSyncEvent?.Invoke(new VoiceChatDataReceived(clip, SteamUser.GetSteamID().ToString()));
             }
 
             yield return null; // Wait for the next frame
@@ -225,7 +230,7 @@ public class ChatRoomHandler
     [CanBeNull]
     private ProcessedVoiceData? ProcessVoiceDataInBackground(byte[] voiceByteArray)
     {
-        const uint optimalSampleRate = 22050;
+        const uint optimalSampleRate = 48000;
         byte[] decompressedBuffer = new byte[optimalSampleRate * 4]; // Buffer for 2 seconds of audio
 
         if (SteamUser.DecompressVoice(voiceByteArray, (uint)voiceByteArray.Length, decompressedBuffer,

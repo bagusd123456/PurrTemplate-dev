@@ -1,10 +1,13 @@
-using NyxMachina.Shared.EventFramework;
+using PurrNet;
+using Steamworks;
 using UnityEngine;
 
-public class AudioReceiver : MonoBehaviour
+public class AudioReceiver : NetworkBehaviour
 {
     public AudioSource audioSource;
     public float volumeScale = 0.1f;
+
+    public bool debugHearSelf;
 
     private void Awake()
     {
@@ -13,16 +16,24 @@ public class AudioReceiver : MonoBehaviour
 
     private void OnEnable()
     {
-        EVENT.Subscribe<ChatRoomHandler.VoiceChatDataReceived>(HandleVoiceChatReceived);
+        ChatRoomHandler.VoiceChatReceivedSyncEvent.AddListener(PlaySound);
     }
 
     private void OnDisable()
     {
-        EVENT.Unsubscribe<ChatRoomHandler.VoiceChatDataReceived>(HandleVoiceChatReceived);
+        ChatRoomHandler.VoiceChatReceivedSyncEvent.RemoveListener(PlaySound);
     }
 
-    private void HandleVoiceChatReceived(ChatRoomHandler.VoiceChatDataReceived obj)
+    private void PlaySound(ChatRoomHandler.VoiceChatDataReceived voiceChatData)
     {
-        audioSource.PlayOneShot(obj.VoiceAudio, volumeScale);
+        if (!debugHearSelf)
+        {
+            if (SteamUser.GetSteamID().ToString().Equals(voiceChatData.SenderPlayerId))
+            {
+                return;
+            }
+        }
+
+        audioSource.PlayOneShot(voiceChatData.VoiceAudio, volumeScale);
     }
 }
