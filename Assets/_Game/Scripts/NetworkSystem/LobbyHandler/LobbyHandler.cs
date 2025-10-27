@@ -8,15 +8,31 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Unity.VisualScripting;
-using UnityEditor;
+using NyxMachina.Shared.EventFramework;
+using NyxMachina.Shared.EventFramework.Core.Payloads;
 using UnityEngine;
 using ConnectionState = PurrNet.Transports.ConnectionState;
 
 public class LobbyHandler
 {
+    public struct OnLobbyJoined : IPayload
+    {
+        public Lobby CurrentLobby { get; private set; }
+
+        public OnLobbyJoined (Lobby targetLobby)
+        {
+            var result = new OnLobbyJoined
+            {
+                CurrentLobby = targetLobby
+            };
+
+            this = result;
+        }
+    }
+
     public static LobbyManager lobbyManager;
     public static NetworkManager networkManager;
+    public static ChatRoomHandler chatRoomHandler;
     public static Task steamCallbackTask;
 
     public LobbyHandler(LobbyManager lobbyManager, NetworkManager networkManager)
@@ -40,6 +56,7 @@ public class LobbyHandler
             }
             steamCallbackTask = RunSteamCallback();
             await lobbyManager.CurrentProvider.InitializeAsync();
+            chatRoomHandler = new ChatRoomHandler();
         }
         catch (Exception e)
         {
@@ -96,6 +113,7 @@ public class LobbyHandler
             return AsyncResult<Lobby>.Fail(errorMessage);
         }
 
+        EVENT.Publish(new OnLobbyJoined(createdLobby));
         return AsyncResult<Lobby>.Success(createdLobby);
     }
 
@@ -132,8 +150,8 @@ public class LobbyHandler
             return AsyncResult<Lobby>.Fail(errorMessage);
         }
 
+        EVENT.Publish(new OnLobbyJoined(currentLobby));
         return AsyncResult<Lobby>.Success(currentLobby);
-
     }
 
     [Command]
