@@ -1,9 +1,12 @@
+using NyxMachina.Shared.EventFramework;
 using PurrNet;
 using Steamworks;
 using UnityEngine;
 
 public class AudioReceiver : NetworkBehaviour
 {
+    public static SyncEvent<ChatRoomHandler.VoiceChatDataReceived> VoiceChatReceivedSyncEvent = new();
+
     public AudioSource audioSource;
     public float volumeScale = 0.1f;
 
@@ -16,12 +19,19 @@ public class AudioReceiver : NetworkBehaviour
 
     private void OnEnable()
     {
-        ChatRoomHandler.VoiceChatReceivedSyncEvent.AddListener(PlaySound);
+        EVENT.Subscribe<ChatRoomHandler.VoiceChatDataReceived>(HandleLocalVoiceReceived);
+        VoiceChatReceivedSyncEvent.AddListener(PlaySound);
     }
 
     private void OnDisable()
     {
-        ChatRoomHandler.VoiceChatReceivedSyncEvent.RemoveListener(PlaySound);
+        EVENT.Unsubscribe<ChatRoomHandler.VoiceChatDataReceived>(HandleLocalVoiceReceived);
+        VoiceChatReceivedSyncEvent.RemoveListener(PlaySound);
+    }
+
+    private void HandleLocalVoiceReceived(ChatRoomHandler.VoiceChatDataReceived evt)
+    {
+        VoiceChatReceivedSyncEvent?.Invoke(evt);
     }
 
     private void PlaySound(ChatRoomHandler.VoiceChatDataReceived voiceChatData)

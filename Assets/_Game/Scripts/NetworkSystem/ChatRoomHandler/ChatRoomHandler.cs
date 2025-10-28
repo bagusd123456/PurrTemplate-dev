@@ -54,8 +54,6 @@ public class ChatRoomHandler
         public int Samples;
     }
 
-    public static SyncEvent<VoiceChatDataReceived> VoiceChatReceivedSyncEvent = new();
-
     // Callbacks
     private Callback<LobbyChatMsg_t> _lobbyChatMsg;
 
@@ -129,7 +127,6 @@ public class ChatRoomHandler
 
                 // Publish the event with the valid AudioClip
                 EVENT.Publish(new VoiceChatDataReceived(clip, SteamUser.GetSteamID().ToString()));
-                VoiceChatReceivedSyncEvent?.Invoke(new VoiceChatDataReceived(clip, SteamUser.GetSteamID().ToString()));
             }
 
             yield return null; // Wait for the next frame
