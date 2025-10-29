@@ -1,16 +1,20 @@
+using System;
+using Newtonsoft.Json;
 using NyxMachina.Shared.EventFramework;
 using PurrNet;
 using Steamworks;
+using System.Text;
+using PurrNet.Transports;
 using UnityEngine;
+using CompressionLevel = PurrNet.CompressionLevel;
 
 public class AudioReceiver : NetworkBehaviour
 {
-    public static SyncEvent<ChatRoomHandler.VoiceChatDataReceived> VoiceChatReceivedSyncEvent = new();
-
     public AudioSource audioSource;
     public float volumeScale = 0.1f;
 
     public bool debugHearSelf;
+    public bool debugPrintDelay;
 
     private void Awake()
     {
@@ -20,30 +24,54 @@ public class AudioReceiver : NetworkBehaviour
     private void OnEnable()
     {
         EVENT.Subscribe<ChatRoomHandler.VoiceChatDataReceived>(HandleLocalVoiceReceived);
-        VoiceChatReceivedSyncEvent.AddListener(PlaySound);
     }
 
     private void OnDisable()
     {
         EVENT.Unsubscribe<ChatRoomHandler.VoiceChatDataReceived>(HandleLocalVoiceReceived);
-        VoiceChatReceivedSyncEvent.RemoveListener(PlaySound);
     }
 
     private void HandleLocalVoiceReceived(ChatRoomHandler.VoiceChatDataReceived evt)
     {
-        VoiceChatReceivedSyncEvent?.Invoke(evt);
+        var jsonData = JsonConvert.SerializeObject(evt);
+        var byteArrayData = Encoding.UTF8.GetBytes(jsonData);
+        PlaySoundToObservers(byteArrayData);
     }
 
     private void PlaySound(ChatRoomHandler.VoiceChatDataReceived voiceChatData)
     {
+        if (debugPrintDelay)
+        {
+            long nowTicks = DateTime.Now.Ticks;
+            TimeSpan totalDelay = TimeSpan.FromTicks(nowTicks - voiceChatData.SentTimestampTicks);
+            Debug.Log($"[VoiceChat] Playing audio from {voiceChatData.SenderPlayerId}. Total delay: {totalDelay.TotalMilliseconds:F1} ms");
+        }
+
+        audioSource.PlayOneShot(voiceChatData.VoiceAudio.ToAudioClip(), volumeScale);
+    }
+
+    [ObserversRpc(Channel.Unreliable, compressionLevel:CompressionLevel.Best, requireServer: false)]
+    private void PlaySoundToObservers(byte[] voiceChatDataByte)
+    {
+        var jsonData = Encoding.UTF8.GetString(voiceChatDataByte);
+        var convertedData = JsonConvert.DeserializeObject<ChatRoomHandler.VoiceChatDataReceived>(jsonData);
+
         if (!debugHearSelf)
         {
-            if (SteamUser.GetSteamID().ToString().Equals(voiceChatData.SenderPlayerId))
+            if (SteamUser.GetSteamID().ToString().Equals(convertedData.SenderPlayerId))
             {
                 return;
             }
         }
 
-        audioSource.PlayOneShot(voiceChatData.VoiceAudio, volumeScale);
+        if (debugPrintDelay)
+        {
+            var receivedTicks = DateTime.Now.Ticks;
+            // Calculate the delay from when the packet was sent to when it was received and deserialized.
+            TimeSpan networkDelay = TimeSpan.FromTicks(receivedTicks - convertedData.SentTimestampTicks);
+            Debug.Log($"[VoiceChat] Received audio packet. Network+Serialization delay: {networkDelay.TotalMilliseconds:F1} ms");
+        }
+        
+        PlaySound(convertedData);
     }
 }

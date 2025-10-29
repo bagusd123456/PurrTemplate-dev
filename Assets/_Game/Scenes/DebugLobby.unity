@@ -1561,7 +1561,7 @@ GameObject:
   - component: {fileID: 814705580}
   - component: {fileID: 814705579}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: VoiceReceiver
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1690,8 +1690,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bd903a43b8e96104096400926743915d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _isSetup: 0
+  _prefabId: -2147483648
+  _componentIndex: -2147483648
+  _shouldBePooled: 0
+  _parent: {fileID: 0}
+  _invertedPathToNearestParent: 
+  _directChildren: []
+  _networkRules: {fileID: 0}
+  _visitiblityRules: {fileID: 0}
   audioSource: {fileID: 814705579}
   volumeScale: 0.8
+  debugHearSelf: 0
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0

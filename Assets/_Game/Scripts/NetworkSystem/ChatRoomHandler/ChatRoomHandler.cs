@@ -1,3 +1,4 @@
+using System;
 using JetBrains.Annotations;
 using NyxMachina.Shared.EventFramework;
 using NyxMachina.Shared.EventFramework.Core.Payloads;
@@ -15,6 +16,7 @@ public class ChatRoomHandler
     // Enum to define the recording mode
     public enum VoiceMode
     {
+        None = -1,
         PushToTalk,
         VoiceActivity
     }
@@ -35,14 +37,48 @@ public class ChatRoomHandler
         public string message;
     }
 
+    [Serializable]
+    public struct AudioData
+    {
+        public float[] audioSamples;
+        public int channels;
+        public int frequency;
+
+        public AudioData(AudioClip clip)
+        {
+            // Get the raw audio data as a float array
+            audioSamples = new float[clip.samples * clip.channels];
+            clip.GetData(audioSamples, 0);
+
+            // Get the necessary metadata
+            channels = clip.channels;
+            frequency = clip.frequency;
+        }
+
+        public AudioClip ToAudioClip()
+        {
+            // Create an empty AudioClip
+            AudioClip clip = AudioClip.Create("received_voice", audioSamples.Length / channels, channels, frequency, false);
+
+            // Load the sample data into the new clip
+            clip.SetData(audioSamples, 0);
+
+            return clip;
+        }
+    }
+
+    [Serializable]
     public struct VoiceChatDataReceived : IPayload
     {
-        public AudioClip VoiceAudio;
+        public AudioData VoiceAudio;
         public string SenderPlayerId;
-        public VoiceChatDataReceived(AudioClip voiceAudio, string senderId)
+        public long SentTimestampTicks; 
+        public VoiceChatDataReceived(AudioData voiceAudio, string senderId)
         {
             VoiceAudio = voiceAudio;
             SenderPlayerId = senderId;
+
+            SentTimestampTicks = DateTime.Now.Ticks;
         }
     }
 
@@ -58,7 +94,7 @@ public class ChatRoomHandler
     private Callback<LobbyChatMsg_t> _lobbyChatMsg;
 
     private CSteamID _currentLobbyID;
-    public VoiceMode CurrentVoiceMode { get; private set; } = VoiceMode.PushToTalk;
+    public VoiceMode CurrentVoiceMode { get; private set; } = VoiceMode.None;
 
     public Task VoiceTransmissionTask;
     public CancellationTokenSource TransmissionTaskCancellation;
@@ -78,6 +114,8 @@ public class ChatRoomHandler
         Application.wantsToQuit += HandleApplicationQuit;
         MainThreadDispatcher.Init();
         MainThreadDispatcher.Instance.StartCoroutineOnMainThread(VoiceProcessingCoroutine());
+
+        SetVoiceMode(VoiceMode.VoiceActivity);
     }
 
     private bool HandleApplicationQuit()
@@ -126,7 +164,7 @@ public class ChatRoomHandler
                 clip.SetData(data.AudioData, 0);
 
                 // Publish the event with the valid AudioClip
-                EVENT.Publish(new VoiceChatDataReceived(clip, SteamUser.GetSteamID().ToString()));
+                EVENT.Publish(new VoiceChatDataReceived(new AudioData(clip), SteamUser.GetSteamID().ToString()));
             }
 
             yield return null; // Wait for the next frame
