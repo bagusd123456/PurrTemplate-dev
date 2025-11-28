@@ -6007,7 +6007,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5056359655081108189, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
       propertyPath: _tickRate
-      value: 90
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 5918337068757129126, guid: fa6491a1d6e138a41a4bde2066dff8c2, type: 3}
       propertyPath: currentProvider
