@@ -1,10 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Cinemachine;
 using UnityEngine;
 
 public class CameraFollow : MonoBehaviour
 {
-
+    public CinemachineVirtualCamera VirtualCamera;
     public Transform carTransform;
     [Range(1, 10)]
     public float followSpeed = 2;
@@ -40,18 +41,24 @@ public class CameraFollow : MonoBehaviour
         _absoluteInitCameraPosition = initialCameraPosition - initialCarPosition;
     }
 
-    void FixedUpdate()
+    //void LateUpdate()
+    //{
+    //    if (!carTransform) return;
+
+    //    //Look at car
+    //    Vector3 _lookDirection = (new Vector3(carTransform.position.x, carTransform.position.y, carTransform.position.z)) - transform.position;
+    //    Quaternion _rot = Quaternion.LookRotation(_lookDirection, Vector3.up);
+    //    transform.rotation = Quaternion.Lerp(transform.rotation, _rot, lookSpeed * Time.deltaTime);
+
+    //    //Move to car
+    //    Vector3 _targetPos = _absoluteInitCameraPosition + carTransform.transform.position;
+    //    transform.position = Vector3.Lerp(transform.position, _targetPos, followSpeed * Time.deltaTime);
+    //}
+
+    public void SetTarget(Transform followTarget)
     {
-        if (!carTransform) return;
-
-        //Look at car
-        Vector3 _lookDirection = (new Vector3(carTransform.position.x, carTransform.position.y, carTransform.position.z)) - transform.position;
-        Quaternion _rot = Quaternion.LookRotation(_lookDirection, Vector3.up);
-        transform.rotation = Quaternion.Lerp(transform.rotation, _rot, lookSpeed * Time.deltaTime);
-
-        //Move to car
-        Vector3 _targetPos = _absoluteInitCameraPosition + carTransform.transform.position;
-        transform.position = Vector3.Lerp(transform.position, _targetPos, followSpeed * Time.deltaTime);
+        VirtualCamera.Follow = followTarget;
+        VirtualCamera.LookAt = followTarget;
     }
 
 }

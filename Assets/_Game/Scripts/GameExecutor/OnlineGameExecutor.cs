@@ -121,6 +121,7 @@ public class OnlineGameExecutor : NetworkBehaviour
     /// </remarks>
     private void SpawnPlayer(PlayerID player)
     {
+        return;
         if (!isServer) return;
 
         // Check for existing entries, including "stale" entries where the GameObject was destroyed but the key remains.

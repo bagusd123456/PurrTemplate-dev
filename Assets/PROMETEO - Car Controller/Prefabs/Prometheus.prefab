@@ -47,6 +47,9 @@ GameObject:
   - component: {fileID: 5135156708204615449}
   - component: {fileID: 627556911}
   - component: {fileID: 3353863226892817181}
+  - component: {fileID: 2884793033504902618}
+  - component: {fileID: 6767686256052561763}
+  - component: {fileID: 9007052191068031607}
   m_Layer: 0
   m_Name: Prometheus
   m_TagString: Untagged
@@ -112,15 +115,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0fefceefe666bb4682b272ec8c5bdd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _isSetup: 0
-  _prefabId: -2147483648
-  _componentIndex: -2147483648
-  _shouldBePooled: 0
-  _parent: {fileID: 0}
-  _invertedPathToNearestParent: 
-  _directChildren: []
-  _networkRules: {fileID: 0}
-  _visitiblityRules: {fileID: 0}
+  _repeatInputFactor: 1
+  _extrapolateInput: 1
+  cameraTarget: {fileID: 0}
   maxSpeed: 120
   maxReverseSpeed: 45
   accelerationMultiplier: 6
@@ -148,20 +145,7 @@ MonoBehaviour:
   useSounds: 0
   carEngineSound: {fileID: 0}
   tireScreechSound: {fileID: 0}
-  useTouchControls: 0
-  throttleButton: {fileID: 0}
-  reverseButton: {fileID: 0}
-  turnRightButton: {fileID: 0}
-  turnLeftButton: {fileID: 0}
-  handbrakeButton: {fileID: 0}
-  carSpeed: 0
-  isDrifting: 0
-  isTractionLocked: 0
-  OnDriftStateChanged:
-    _ownerAuth: 0
-    unityEvent:
-      m_PersistentCalls:
-        m_Calls: []
+  offset: {x: 0, y: 0, z: 0}
 --- !u!114 &3353863226892817181
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -193,6 +177,55 @@ MonoBehaviour:
   _characterControllerPatch: 0
   _ownerAuth: 1
   _interpolationTiming: 0
+--- !u!114 &2884793033504902618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642287924342879162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _graphics: {fileID: 0}
+  _floatAccuracy: 0
+  _interpolationSettings: {fileID: 11400000, guid: ee0b5d4d829473c4fbf691976a9e0dd3, type: 2}
+  _unparentGraphics: 0
+  _characterControllerPatch: 1
+--- !u!114 &6767686256052561763
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642287924342879162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _rigidbody: {fileID: 5135156708204615449}
+  _floatAccuracy: 0
+  _eventMask: 63
+  _ignoreTriggerOnTrigger: 0
+--- !u!114 &9007052191068031607
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642287924342879162}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15780e97d72f9104db84d77a763c6fe6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _storeHistoryInSeconds: 5
+  _autoAddAllChildren: 1
+  _colliders3D: []
+  _colliders2D: []
 --- !u!1 &934883528070179459
 GameObject:
   m_ObjectHideFlags: 0
@@ -1412,10 +1445,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: VoiceReceiver
       objectReference: {fileID: 0}
-    - target: {fileID: 3403221557102586996, guid: 4d2cb32bb75853442846afee3c7f8510, type: 3}
-      propertyPath: usePushToTalk
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 3702240013105069613, guid: 4d2cb32bb75853442846afee3c7f8510, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -1456,16 +1485,7 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7605888935928002852, guid: 4d2cb32bb75853442846afee3c7f8510, type: 3}
-      propertyPath: config
-      value: 
-      objectReference: {fileID: 11400000, guid: d6afa508e2c76f147bc9f4c9fa038673, type: 2}
-    - target: {fileID: 8313654326954893750, guid: 4d2cb32bb75853442846afee3c7f8510, type: 3}
-      propertyPath: OutputAudioMixerGroup
-      value: 
-      objectReference: {fileID: 24300002, guid: f60fe2e2a2fe45343a2e4549d2b287b5, type: 2}
-    m_RemovedComponents:
-    - {fileID: 4260451967715874594, guid: 4d2cb32bb75853442846afee3c7f8510, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

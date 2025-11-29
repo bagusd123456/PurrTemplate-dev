@@ -55,7 +55,7 @@ MonoBehaviour:
   _dontDestroyOnLoad: 1
   _transport: {fileID: 4568614055171041761}
   _networkPrefabs: {fileID: 11400000, guid: 4d50d267c9f564f4abc1e5dd9c63cc15, type: 2}
-  _networkAssets: {fileID: 0}
+  _networkAssets: {fileID: 11400000, guid: 9db4209b0a56c9e4eb7f4fbf3173eb84, type: 2}
   _networkRules: {fileID: 11400000, guid: d8799083b96579a42b8b2d03e4ceae98, type: 2}
   _visibilityRules: {fileID: 11400000, guid: 8f014a5bd8dc68646a2a3c0b18c5bbd8, type: 2}
   _authenticator: {fileID: 0}
@@ -73,7 +73,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 018749c98c25d47418932e090d8f8fbf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentProvider: {fileID: 0}
+  currentProvider: {fileID: 2195692995041031240}
   createRoomArgs:
     maxPlayers: 5
     roomProperties:
@@ -166,5 +166,5 @@ MonoBehaviour:
   placement: 1
   _displayType: -1
   _displayTarget: 6
-  fontSize: 13
+  fontSize: 32
   textColor: {r: 1, g: 1, b: 1, a: 1}
