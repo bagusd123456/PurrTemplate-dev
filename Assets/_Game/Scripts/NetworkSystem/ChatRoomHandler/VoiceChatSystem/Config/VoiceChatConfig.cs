@@ -32,7 +32,21 @@ public class VoiceConfig : SerializedScriptableObject
     [Range(0f, 0.1f)]
     public float SilenceThreshold = 0.01f;
 
-    public int FrameSize => SampleRate * (int)Duration / 1000;
+    public int FrameSize => GetFrameSize;
+    public int FrameSizeOverride { get; set; }
+
+    public int GetFrameSize
+    {
+        get
+        {
+            if (FrameSizeOverride > 0)
+            {
+                return FrameSizeOverride;
+            }
+
+            return SampleRate * (int)Duration / 1000;
+        }
+    }
 
     public enum FrameDuration { Time10ms = 10, Time20ms = 20, Time40ms = 40, Time60ms = 60 }
 }

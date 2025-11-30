@@ -1,12 +1,8 @@
-using System;
-using JetBrains.Annotations;
 using NyxMachina.Shared.EventFramework;
 using NyxMachina.Shared.EventFramework.Core.Payloads;
-using PurrNet;
 using QFSW.QC;
 using Steamworks;
-using System.Collections;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -37,59 +33,6 @@ public class ChatRoomHandler
         public string message;
     }
 
-    [Serializable]
-    public struct AudioData
-    {
-        public float[] audioSamples;
-        public int channels;
-        public int frequency;
-
-        public AudioData(AudioClip clip)
-        {
-            // Get the raw audio data as a float array
-            audioSamples = new float[clip.samples * clip.channels];
-            clip.GetData(audioSamples, 0);
-
-            // Get the necessary metadata
-            channels = clip.channels;
-            frequency = clip.frequency;
-        }
-
-        public AudioClip ToAudioClip()
-        {
-            // Create an empty AudioClip
-            AudioClip clip = AudioClip.Create("received_voice", audioSamples.Length / channels, channels, frequency, false);
-
-            // Load the sample data into the new clip
-            clip.SetData(audioSamples, 0);
-
-            return clip;
-        }
-    }
-
-    [Serializable]
-    public struct VoiceChatDataReceived : IPayload
-    {
-        public AudioData VoiceAudio;
-        public string SenderPlayerId;
-        public long SentTimestampTicks; 
-        public VoiceChatDataReceived(AudioData voiceAudio, string senderId)
-        {
-            VoiceAudio = voiceAudio;
-            SenderPlayerId = senderId;
-
-            SentTimestampTicks = DateTime.Now.Ticks;
-        }
-    }
-
-    public struct ProcessedVoiceData
-    {
-        public float[] AudioData;
-        public uint SampleRate;
-        public int Channels;
-        public int Samples;
-    }
-
     // Callbacks
     private Callback<LobbyChatMsg_t> _lobbyChatMsg;
 
@@ -99,23 +42,35 @@ public class ChatRoomHandler
     public Task VoiceTransmissionTask;
     public CancellationTokenSource TransmissionTaskCancellation;
 
-    // Thread-safe queues for communication between threads
-    private readonly ConcurrentQueue<byte[]> rawVoiceDataQueue = new ConcurrentQueue<byte[]>();
-    private readonly ConcurrentQueue<ProcessedVoiceData> processedVoiceDataQueue = new ConcurrentQueue<ProcessedVoiceData>();
+    public List<IVoiceNetworkTransport> VoiceChatHandlerList = new();
 
-    public ChatRoomHandler()
+    private readonly VoiceHandlerPool _voicePool;
+
+    public ChatRoomHandler(GameObject voicePrefab)
     {
         TransmissionTaskCancellation = new CancellationTokenSource();
 
         _lobbyChatMsg = Callback<LobbyChatMsg_t>.Create(OnReceivedChatMessage);
-        EVENT.Subscribe<LobbyHandler.OnLobbyJoined>(HandleOnLobbyJoined);
-        VoiceTransmissionTask = Task.Run(()=> VoiceProcessingLoop(TransmissionTaskCancellation.Token));
+        
+        EVENT.Subscribe<LobbyHandler.OnLeftLobby>(HandleOnLeftLobby);
+        EVENT.Subscribe<LobbyHandler.OnJoinLobby>(HandleOnJoinLobby);
+        EVENT.Subscribe<LobbyHandler.OnPlayerLeftLobby>(HandleOnPlayerLeftLobby);
+        EVENT.Subscribe<LobbyHandler.OnPlayerJoinLobby>(HandleOnPlayerJoinLobby);
 
+        Application.wantsToQuit -= HandleApplicationQuit;
         Application.wantsToQuit += HandleApplicationQuit;
-        MainThreadDispatcher.Init();
-        MainThreadDispatcher.Instance.StartCoroutineOnMainThread(VoiceProcessingCoroutine());
-
+        
         SetVoiceMode(VoiceMode.VoiceActivity);
+    }
+
+    private void HandleOnPlayerJoinLobby(LobbyHandler.OnPlayerJoinLobby obj)
+    {
+        
+    }
+
+    private void HandleOnPlayerLeftLobby(LobbyHandler.OnPlayerLeftLobby obj)
+    {
+        
     }
 
     private bool HandleApplicationQuit()
@@ -124,7 +79,7 @@ public class ChatRoomHandler
         return true;
     }
 
-    private void HandleOnLobbyJoined(LobbyHandler.OnLobbyJoined obj)
+    private void HandleOnJoinLobby(LobbyHandler.OnJoinLobby obj)
     {
         // Convert LobbyId (string) to ulong, then to CSteamID
         if (ulong.TryParse(obj.CurrentLobby.LobbyId, out var ulongLobbyId))
@@ -138,57 +93,11 @@ public class ChatRoomHandler
         }
     }
 
-    /// <summary>
-    /// Main thread coroutine: Produces raw data and Finalizes processed data.
-    /// </summary>
-    public IEnumerator VoiceProcessingCoroutine()
+    private void HandleOnLeftLobby(LobbyHandler.OnLeftLobby obj)
     {
-        Debug.Log("Voice processing coroutine started on main thread.");
-        while (TransmissionTaskCancellation is { IsCancellationRequested: false })
+        foreach (var voiceNetworkTransport in VoiceChatHandlerList)
         {
-            // Get data bytes to produce ProcessedVoiceData
-            if (SteamUser.GetAvailableVoice(out uint compressedSize) == EVoiceResult.k_EVoiceResultOK && compressedSize > 0)
-            {
-                byte[] compressedBuffer = new byte[compressedSize];
-                if (SteamUser.GetVoice(true, compressedBuffer, compressedSize, out uint bytesWritten) == EVoiceResult.k_EVoiceResultOK && bytesWritten > 0)
-                {
-                    rawVoiceDataQueue.Enqueue(compressedBuffer);
-                }
-            }
-
-            // Queue raw Data to be processed
-            if (processedVoiceDataQueue.TryDequeue(out ProcessedVoiceData data))
-            {
-                //Create the AudioClip here.
-                AudioClip clip = AudioClip.Create("Voice", data.Samples, data.Channels, (int)data.SampleRate, false);
-                clip.SetData(data.AudioData, 0);
-
-                // Publish the event with the valid AudioClip
-                //EVENT.Publish(new VoiceChatDataReceived(new AudioData(clip), SteamUser.GetSteamID().ToString()));
-            }
-
-            yield return null; // Wait for the next frame
-        }
-        Debug.Log("Voice processing coroutine finished.");
-    }
-
-    
-    private async Task VoiceProcessingLoop(CancellationToken token)
-    {
-        while (!token.IsCancellationRequested)
-        {
-            if (rawVoiceDataQueue.TryDequeue(out byte[] compressedVoice))
-            {
-                var result = ProcessVoiceDataInBackground(compressedVoice);
-                if (result.HasValue)
-                {
-                    processedVoiceDataQueue.Enqueue(result.Value);
-                }
-            }
-            else
-            {
-                await Task.Delay(10, token); // Prevent busy-waiting
-            }
+            voiceNetworkTransport.Shutdown();
         }
     }
 
@@ -262,43 +171,13 @@ public class ChatRoomHandler
         EVENT.Publish(new TextChatDataReceived(textData));
     }
 
-    [CanBeNull]
-    private ProcessedVoiceData? ProcessVoiceDataInBackground(byte[] voiceByteArray)
-    {
-        const uint optimalSampleRate = 48000;
-        byte[] decompressedBuffer = new byte[optimalSampleRate * 4]; // Buffer for 2 seconds of audio
-
-        if (SteamUser.DecompressVoice(voiceByteArray, (uint)voiceByteArray.Length, decompressedBuffer,
-                (uint)decompressedBuffer.Length, out var bytesWritten, optimalSampleRate) != EVoiceResult.k_EVoiceResultOK ||
-            bytesWritten <= 0)
-        {
-            return null;
-        }
-
-        int samples = (int)bytesWritten / 2; // 2 bytes per sample for 16-bit audio
-        float[] audioData = new float[samples];
-
-        for (int i = 0; i < samples; i++)
-        {
-            // Convert 16-bit PCM to float
-            short pcm = (short)(decompressedBuffer[i * 2] | decompressedBuffer[i * 2 + 1] << 8);
-            audioData[i] = pcm / 32768.0f;
-        }
-
-        // Return a struct with all the info needed to create the AudioClip on the main thread.
-        return new ProcessedVoiceData
-        {
-            AudioData = audioData,
-            SampleRate = optimalSampleRate,
-            Channels = 1,
-            Samples = samples
-        };
-    }
-
     public void Shutdown()
     {
         _lobbyChatMsg = null;
-        EVENT.Unsubscribe<LobbyHandler.OnLobbyJoined>(HandleOnLobbyJoined);
+        EVENT.Unsubscribe<LobbyHandler.OnLeftLobby>(HandleOnLeftLobby);
+        EVENT.Unsubscribe<LobbyHandler.OnJoinLobby>(HandleOnJoinLobby);
+        EVENT.Unsubscribe<LobbyHandler.OnPlayerLeftLobby>(HandleOnPlayerLeftLobby);
+        EVENT.Unsubscribe<LobbyHandler.OnPlayerJoinLobby>(HandleOnPlayerJoinLobby);
         TransmissionTaskCancellation.Cancel();
     }
 }

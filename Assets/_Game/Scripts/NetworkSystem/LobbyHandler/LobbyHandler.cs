@@ -1,3 +1,5 @@
+using NyxMachina.Shared.EventFramework;
+using NyxMachina.Shared.EventFramework.Core.Payloads;
 using PurrLobby;
 using PurrNet;
 using PurrNet.Steam;
@@ -8,25 +10,48 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using NyxMachina.Shared.EventFramework;
-using NyxMachina.Shared.EventFramework.Core.Payloads;
 using UnityEngine;
 using ConnectionState = PurrNet.Transports.ConnectionState;
 
 public class LobbyHandler
 {
-    public struct OnLobbyJoined : IPayload
+    public struct OnJoinLobby : IPayload
     {
         public Lobby CurrentLobby { get; private set; }
 
-        public OnLobbyJoined (Lobby targetLobby)
+        public OnJoinLobby(Lobby targetLobby)
         {
-            var result = new OnLobbyJoined
-            {
-                CurrentLobby = targetLobby
-            };
+            CurrentLobby = targetLobby;
+        }
+    }
 
-            this = result;
+    public struct OnLeftLobby : IPayload
+    {
+        public Lobby LastJoinedLobby { get; private set; }
+
+        public OnLeftLobby(Lobby lastJoinedLobby)
+        {
+            LastJoinedLobby = lastJoinedLobby;
+        }
+    }
+
+    public struct OnPlayerJoinLobby : IPayload
+    {
+        public LobbyUser UserData;
+
+        public OnPlayerJoinLobby(LobbyUser user)
+        {
+            UserData = user;
+        }
+    }
+
+    public struct OnPlayerLeftLobby : IPayload
+    {
+        public LobbyUser UserData;
+
+        public OnPlayerLeftLobby(LobbyUser user)
+        {
+            UserData = user;
         }
     }
 
@@ -35,10 +60,50 @@ public class LobbyHandler
     public static ChatRoomHandler chatRoomHandler;
     public static Task steamCallbackTask;
 
+    public static Dictionary<ulong, LobbyUser> PlayerList = new();
+
     public LobbyHandler(LobbyManager lobbyManager, NetworkManager networkManager)
     {
         LobbyHandler.lobbyManager = lobbyManager;
         LobbyHandler.networkManager = networkManager;
+
+        lobbyManager.OnRoomUpdated.RemoveListener(HandleRoomUpdated);
+        lobbyManager.OnRoomUpdated.AddListener(HandleRoomUpdated);
+
+        networkManager.onPlayerJoined -= HandleOnPlayerJoin;
+        networkManager.onPlayerLeft -= HandleOnPlayerLeft;
+        networkManager.onPlayerJoined += HandleOnPlayerJoin;
+        networkManager.onPlayerLeft += HandleOnPlayerLeft;
+    }
+
+    private void HandleRoomUpdated(Lobby currentLobby)
+    {
+
+    }
+
+    private async void HandleOnPlayerLeft(PlayerID player, bool asServer)
+    {
+        if (player.isServer)
+        {
+            await LeaveLobbyAsync();
+            PlayerList.Clear();
+            return;
+        }
+
+        PlayerList.Remove(player.id.value);
+    }
+
+    private void HandleOnPlayerJoin(PlayerID player, bool isReconnect, bool asServer)
+    {
+        if (isReconnect)
+            return;
+
+        foreach (var lobbyUser in lobbyManager.CurrentLobby.Members)
+        {
+            // Sync LobbyUser with NetworkManagerUser
+        }
+
+        
     }
 
     public async Task<AsyncResult> Init()
@@ -56,7 +121,8 @@ public class LobbyHandler
             }
             steamCallbackTask = RunSteamCallback();
             await lobbyManager.CurrentProvider.InitializeAsync();
-            chatRoomHandler = new ChatRoomHandler();
+            var prefab = Resources.Load("VoiceReceiver") as GameObject;
+            chatRoomHandler = new ChatRoomHandler(prefab);
         }
         catch (Exception e)
         {
@@ -113,7 +179,7 @@ public class LobbyHandler
             return AsyncResult<Lobby>.Fail(errorMessage);
         }
 
-        EVENT.Publish(new OnLobbyJoined(createdLobby));
+        EVENT.Publish(new OnJoinLobby(createdLobby));
         return AsyncResult<Lobby>.Success(createdLobby);
     }
 
@@ -150,7 +216,7 @@ public class LobbyHandler
             return AsyncResult<Lobby>.Fail(errorMessage);
         }
 
-        EVENT.Publish(new OnLobbyJoined(currentLobby));
+        EVENT.Publish(new OnJoinLobby(currentLobby));
         return AsyncResult<Lobby>.Success(currentLobby);
     }
 
@@ -195,7 +261,6 @@ public class LobbyHandler
             Debug.LogError(errorMessage);
             return AsyncResult.Fail(errorMessage);
         }
-
         return AsyncResult.Success();
     }
 
@@ -489,5 +554,24 @@ public class LobbyHandler
         }
     }
 
+    private void ClientConnectedRPC()
+    {
+
+    }
+
     #endregion
+}
+
+public static class LobbyHandlerUtil
+{
+    public static LobbyUser GetLobbyUserByClientId(ulong clientId)
+    {
+        if (!LobbyHandler.PlayerList.TryGetValue(clientId, out var result))
+        {
+            Debug.LogWarning($"Cannot found LobbyUserData with clientId '{clientId}'.");
+            return default;
+        }
+
+        return result;
+    }
 }

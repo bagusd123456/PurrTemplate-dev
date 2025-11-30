@@ -1,18 +1,21 @@
 using PurrNet;
-using PurrNet.Packing;
-using PurrNet.Prediction;
 using PurrNet.Transports;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
 public interface IVoiceNetworkTransport
 {
-    void SendVoiceData(byte[] compressedData);
+    void Init();
+    void SendVoiceData(byte[] compressedData, int sequenceId);
+    void MuteInput(bool state);
+    void SetOutputVolume(float volume);
+    void MuteOutput(bool state);
+    void Shutdown();
 }
 
 [RequireComponent(typeof(VoiceChatRecorder))]
 [RequireComponent(typeof(VoiceChatPlayer))]
-public class PurrNetOpusBridge : NetworkIdentity, IVoiceNetworkTransport
+public class PurrNetVoiceChatHandler : NetworkIdentity, IVoiceNetworkTransport
 {
     [Title("Central Voice Configuration", "Settings apply to Recorder & Player", TitleAlignments.Centered)]
     [InlineEditor(Expanded = false)]
@@ -21,13 +24,15 @@ public class PurrNetOpusBridge : NetworkIdentity, IVoiceNetworkTransport
     public VoiceConfig config;
 
     [Title("Runtime Debug")]
-    [ShowInInspector, ReadOnly, ProgressBar(0, 0.1f)] 
+    [ShowInInspector, ReadOnly, ProgressBar(0, 1f)] 
     public float CurrentMicVolume => _voiceRecorder ? _voiceRecorder.CurrentVolume : 0f;
 
     private VoiceChatRecorder _voiceRecorder;
     private VoiceChatPlayer _voicePlayer;
 
     private bool _canHearSelf;
+
+    public ulong ClientId { get; private set; }
 
     private void Awake()
     {
@@ -37,8 +42,26 @@ public class PurrNetOpusBridge : NetworkIdentity, IVoiceNetworkTransport
 
     protected override void OnSpawned()
     {
-        _voicePlayer.Initialize(config);
+        ulong clientId = 0;
 
+        if (isOwner && owner.HasValue)
+        {
+            clientId = owner.Value.id.value;
+            GiveOwnership(owner.Value);
+        }
+
+        ClientId = clientId;
+        Init();
+    }
+
+    protected override void OnDespawned()
+    {
+        Shutdown();
+    }
+
+    public void Init()
+    {
+        _voicePlayer.Initialize(config, ClientId);
         if (isOwner)
         {
             // Local Player: Initialize Recorder
@@ -55,15 +78,46 @@ public class PurrNetOpusBridge : NetworkIdentity, IVoiceNetworkTransport
         }
     }
 
+    public void MuteInput(bool state)
+    {
+        if (!isOwner)
+            return;
+
+        if (state)
+        {
+            _voiceRecorder.StopRecording();
+        }
+        else
+        {
+            _voiceRecorder.StartRecording();
+        }
+    }
+
+    public void SetOutputVolume(float volume)
+    {
+        _voicePlayer.SetVolume(volume);
+    }
+
+    public void MuteOutput(bool state)
+    {
+        _voicePlayer.SetMute(state);
+    }
+
+    public void Shutdown()
+    {
+        _voicePlayer.StopPlayer();
+        _voiceRecorder.enabled = false;
+    }
+
     /// <summary>
     /// Send current player voice data to all observer
     /// </summary>
     /// <param name="compressedData"></param>
-    public void SendVoiceData(byte[] compressedData)
+    public void SendVoiceData(byte[] compressedData, int sequenceId)
     {
         if (NetworkManager.main.clientToServerConn != null)
         {
-            SendOpusRpc(compressedData);
+            SendVoiceDataRpc(compressedData, sequenceId);
         }
     }
 
@@ -73,11 +127,12 @@ public class PurrNetOpusBridge : NetworkIdentity, IVoiceNetworkTransport
     /// <param name="data"></param>
     /// <param name="info"></param>
     [ObserversRpc(Channel.Unreliable, requireServer: false, runLocally: false)]
-    private void SendOpusRpc(byte[] data, RPCInfo info = default)
+    private void SendVoiceDataRpc(byte[] data, int sequenceId, RPCInfo info = default)
     {
         if (_voicePlayer != null)
         {
-            _voicePlayer.OnVoiceDataReceived(data);
+            // Pass the ID to the player
+            _voicePlayer.OnVoiceDataReceived(data, sequenceId);
         }
     }
 
@@ -86,7 +141,20 @@ public class PurrNetOpusBridge : NetworkIdentity, IVoiceNetworkTransport
     private void ReapplySettings()
     {
         if(_voiceRecorder) _voiceRecorder.Initialize(this, config);
-        if(_voicePlayer) _voicePlayer.Initialize(config);
+        if (_voicePlayer)
+        {
+            uint ownerId = 0;
+            if (!owner.HasValue)
+            {
+                Debug.LogError("Owner not found, setting the ID to '0'");
+            }
+            else
+            {
+                ownerId = (uint)owner.Value.id.value;
+            }
+
+            _voicePlayer.Initialize(config, ownerId);
+        } 
     }
 
     [ContextMenu("ToggleHearSelf")]
@@ -105,4 +173,5 @@ public class PurrNetOpusBridge : NetworkIdentity, IVoiceNetworkTransport
 
         Debug.Log($"CanHearSelf set to: {_canHearSelf}");
     }
+    
 }

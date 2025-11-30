@@ -12,7 +12,6 @@ public class NetworkInitiator : MonoBehaviour
     [SerializeField] private OnlineGameExecutor onlineGameExecutor;
     public LobbyHandler LobbyHandler { get; private set; }
 
-
     private async void Awake()
     {
         // If there is an instance, and it's not me, delete myself.

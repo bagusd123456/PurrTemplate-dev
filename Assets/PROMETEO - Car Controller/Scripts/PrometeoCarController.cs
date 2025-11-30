@@ -2,14 +2,18 @@ using PurrNet.Prediction;
 using System;
 using PurrNet;
 using UnityEngine;
+using UnityEngine.Animations;
 using UnityEngine.UI;
 
 public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHandler.State>
 {
     [Header("Camera Setup")]
     public Transform cameraTarget;
-    public PurrNetOpusBridge voiceReceiverPrefab;
-    public PurrNetOpusBridge voiceReceiver { get; private set; }
+    public PurrNetVoiceChatHandler voiceReceiverPrefab;
+    public PurrNetVoiceChatHandler voiceReceiver { get; private set; }
+
+    [SerializeField]
+    private VoiceReceiverInterfaceListener voiceInterface;
 
     [Space(20)]
     [Range(20, 190)] public int maxSpeed = 90;
@@ -113,6 +117,10 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
             {
                 gameObject.AddComponent<AudioListener>();
             }
+
+            string ownerName = "NULL";
+
+            voiceInterface.Init(owner.Value.id.value, ownerName);
         }
     }
 

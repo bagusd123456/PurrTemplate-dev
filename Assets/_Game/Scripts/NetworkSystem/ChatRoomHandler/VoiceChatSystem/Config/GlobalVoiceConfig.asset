@@ -26,5 +26,5 @@ MonoBehaviour:
   Channels: 1
   Bitrate: 48000
   Duration: 40
-  UseInbandFEC: 0
+  UseInbandFEC: 1
   SilenceThreshold: 0.01

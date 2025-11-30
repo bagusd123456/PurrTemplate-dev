@@ -1,6 +1,4 @@
-using PurrNet.Packing;
 using PurrNet.Prediction;
-using System;
 using UnityEngine;
 
 public struct CarInputData : IPredictedData<CarInputData>
@@ -26,9 +24,6 @@ public class CarInputHandler
         public bool IsTractionLocked;
         public bool DeceleratingCar; 
 
-        public void Dispose()
-        {
-            // TODO release managed resources here
-        }
+        public void Dispose() { }
     }
 }

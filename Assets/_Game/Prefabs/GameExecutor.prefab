@@ -54,4 +54,4 @@ MonoBehaviour:
   _networkRules: {fileID: 0}
   _visitiblityRules: {fileID: 0}
   gameplayScene: Demo
-  carPrefab: {fileID: 627556911, guid: 79d0ca8b77e301442afdb49f102e8aed, type: 3}
+  carPrefab: {fileID: 3353863226892817181, guid: 79d0ca8b77e301442afdb49f102e8aed, type: 3}
