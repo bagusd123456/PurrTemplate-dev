@@ -44,21 +44,21 @@ AudioSource:
   m_GameObject: {fileID: 1926406487543018232}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 24300002, guid: f60fe2e2a2fe45343a2e4549d2b287b5, type: 2}
   m_audioClip: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.8
+  m_Volume: 1
   m_Pitch: 1
-  Loop: 0
+  Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
   Priority: 128
-  DopplerLevel: 1
-  MinDistance: 1
-  MaxDistance: 500
+  DopplerLevel: 0
+  MinDistance: 5
+  MaxDistance: 70
   Pan2D: 0
-  rolloffMode: 0
+  rolloffMode: 2
   BypassEffects: 0
   BypassListenerEffects: 0
   BypassReverbZones: 0
@@ -68,9 +68,18 @@ AudioSource:
     - serializedVersion: 3
       time: 0
       value: 1
-      inSlope: 0
-      outSlope: 0
+      inSlope: -2.7085187
+      outSlope: -2.7085187
       tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.15849057
+    - serializedVersion: 3
+      time: 0.35714287
+      value: 0.25
+      inSlope: -1.2444444
+      outSlope: -1.2444444
+      tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334
       outWeight: 0.33333334
@@ -150,8 +159,9 @@ MonoBehaviour:
   _parent: {fileID: 0}
   _invertedPathToNearestParent: 
   _directChildren: []
-  _networkRules: {fileID: 0}
+  _networkRules: {fileID: 11400000, guid: d8799083b96579a42b8b2d03e4ceae98, type: 2}
   _visitiblityRules: {fileID: 0}
+  config: {fileID: 11400000, guid: d6afa508e2c76f147bc9f4c9fa038673, type: 2}
 --- !u!114 &1514942239955230839
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -176,6 +186,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 33c41aea450d0b345bc08d610324ca0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silenceThreshold: 0.01
   pushToTalkKey: 118
-  usePushToTalk: 1
+  usePushToTalk: 0

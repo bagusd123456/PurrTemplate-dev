@@ -1,4 +1,6 @@
 using PurrNet;
+using PurrNet.Packing;
+using PurrNet.Prediction;
 using PurrNet.Transports;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -103,6 +105,4 @@ public class PurrNetOpusBridge : NetworkIdentity, IVoiceNetworkTransport
 
         Debug.Log($"CanHearSelf set to: {_canHearSelf}");
     }
-
-    
 }

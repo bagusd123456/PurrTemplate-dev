@@ -18,6 +18,7 @@ MonoBehaviour:
   assets:
   - {fileID: 919132149155446097, guid: 8ef3dc744ab293d4ea87fd4c59a15afd, type: 3}
   - {fileID: 642287924342879162, guid: 79d0ca8b77e301442afdb49f102e8aed, type: 3}
+  - {fileID: 1926406487543018232, guid: 4d2cb32bb75853442846afee3c7f8510, type: 3}
   _availableTypeNames: []
   _bakedIds: 00000000
   _bakedAssets:

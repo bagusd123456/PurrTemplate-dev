@@ -17,6 +17,8 @@ public class VoiceChatPlayer : MonoBehaviour
     {
         _audioSource = GetComponent<AudioSource>();
         _audioSource.loop = true;
+        _audioSource.spatialBlend = 1.0f;
+        _audioSource.dopplerLevel = 0f;
     }
 
     public void Initialize(VoiceConfig config)
@@ -28,16 +30,38 @@ public class VoiceChatPlayer : MonoBehaviour
         // Restart AudioSource with correct settings
         if (_audioSource.clip != null) Destroy(_audioSource.clip);
         
-        _audioSource.clip = AudioClip.Create("Processor", _config.SampleRate, _config.Channels, _config.SampleRate, false);
+        _audioSource.clip = AudioClip.Create("VoiceStream", _config.SampleRate, 1, _config.SampleRate, true, OnPcmRead);
         _audioSource.Play();
         
         _isInitialized = true;
+    }
+    
+    /// <summary>
+    /// This replaces OnAudioFilterRead. 
+    /// Unity calls this to "fetch" data from our virtual clip.
+    /// This happens BEFORE spatialization, allowing 3D effects to work.
+    /// </summary>
+    /// <param name="data">The buffer to fill. Since we created a Mono clip, data.Length will match sample count.</param>
+    private void OnPcmRead(float[] data)
+    {
+        for (int i = 0; i < data.Length; i++)
+        {
+            if (_audioQueue.TryDequeue(out float sample))
+            {
+                data[i] = sample;
+            }
+            else
+            {
+                data[i] = 0.0f; // Silence if buffer empty
+            }
+        }
     }
 
     public void StopPlayer()
     {
         _audioSource.volume = 0;
         _audioSource.Stop();
+        _audioQueue = new ConcurrentQueue<float>();
         _audioSource.enabled = false;
     }
 
@@ -45,7 +69,7 @@ public class VoiceChatPlayer : MonoBehaviour
     {
         _audioSource.enabled = true;
         _audioSource.volume = 1;
-        _audioSource.spatialBlend = 1.0f; // 3D Audio
+        //_audioSource.spatialBlend = 1.0f; // 3D Audio
         _audioSource.Play();
     }
 
@@ -56,45 +80,32 @@ public class VoiceChatPlayer : MonoBehaviour
     {
         try
         {
-            // 1. Decode the Opus bytes into PCM Floats
             int decodedSamples = _decoder.Decode(data, 0, data.Length, _decodeBuffer, 0, _config.FrameSize, false);
 
-            // 2. Push the floats into the queue
-            for (int i = 0; i < decodedSamples; i++)
+            // If the incoming Opus stream is Stereo, we might need to mix it down to Mono
+            // so it fits into our Mono AudioClip properly.
+            if (_config.Channels == 2)
             {
-                _audioQueue.Enqueue(_decodeBuffer[i]);
+                // Simple Stereo -> Mono mixdown (Average L+R)
+                for (int i = 0; i < decodedSamples; i += 2)
+                {
+                    float left = _decodeBuffer[i];
+                    float right = _decodeBuffer[i + 1];
+                    _audioQueue.Enqueue((left + right) * 0.5f);
+                }
+            }
+            else
+            {
+                // Incoming is already Mono, just push it
+                for (int i = 0; i < decodedSamples; i++)
+                {
+                    _audioQueue.Enqueue(_decodeBuffer[i]);
+                }
             }
         }
         catch (System.Exception e)
         {
             Debug.LogError($"[OpusPlayer] Decode Error: {e.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Unity calls this ~50-100 times per second on a separate AUDIO THREAD.
-    /// We must fill the 'data' array with sound, or 0 for silence.
-    /// </summary>
-    private void OnAudioFilterRead(float[] data, int channels)
-    {
-        // 'data' contains all samples for the next audio frame (e.g. 1024 samples)
-        // 'channels' is usually 2 (Stereo) even if our voice is Mono.
-
-        for (int i = 0; i < data.Length; i += channels)
-        {
-            // Try to get the next voice sample
-            if (_audioQueue.TryDequeue(out float sample))
-            {
-                // Write the sample to Left and Right channels
-                data[i] = sample;
-                if (channels == 2) data[i + 1] = sample;
-            }
-            else
-            {
-                // Prevents looping/ghosting sound.
-                data[i] = 0.0f;
-                if (channels == 2) data[i + 1] = 0.0f;
-            }
         }
     }
 

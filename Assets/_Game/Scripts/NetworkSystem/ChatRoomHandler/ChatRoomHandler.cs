@@ -164,7 +164,7 @@ public class ChatRoomHandler
                 clip.SetData(data.AudioData, 0);
 
                 // Publish the event with the valid AudioClip
-                EVENT.Publish(new VoiceChatDataReceived(new AudioData(clip), SteamUser.GetSteamID().ToString()));
+                //EVENT.Publish(new VoiceChatDataReceived(new AudioData(clip), SteamUser.GetSteamID().ToString()));
             }
 
             yield return null; // Wait for the next frame
@@ -202,13 +202,13 @@ public class ChatRoomHandler
         // If switching to VAD, start recording and let Steam handle activation
         if (CurrentVoiceMode == VoiceMode.VoiceActivity)
         {
-            SteamUser.StartVoiceRecording();
+            //SteamUser.StartVoiceRecording();
             Debug.Log("[System] Voice Activity Detection enabled.");
         }
         // If switching to PTT, stop the continuous recording
         else
         {
-            SteamUser.StopVoiceRecording();
+            //SteamUser.StopVoiceRecording();
             Debug.Log("[System] Push-to-Talk enabled.");
         }
     }

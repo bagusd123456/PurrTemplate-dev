@@ -15,7 +15,7 @@ MonoBehaviour:
   _autoGenerate: 1
   _folder: {fileID: 102900000, guid: 00000000000000001000000000000000, type: 3}
   _defaultPooling:
-    usePooling: 1
+    usePooling: 0
     initialSize: 5
   _prefabs: []
   _newPrefabs:
