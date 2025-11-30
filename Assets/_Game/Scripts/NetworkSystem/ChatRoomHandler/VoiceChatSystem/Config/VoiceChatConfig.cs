@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Sirenix.OdinInspector;
 using Concentus.Enums;
@@ -32,8 +33,13 @@ public class VoiceConfig : SerializedScriptableObject
     [Range(0f, 0.1f)]
     public float SilenceThreshold = 0.01f;
 
-    public int FrameSize => GetFrameSize;
+    public int FrameSize;
     public int FrameSizeOverride { get; set; }
+
+    private void OnEnable()
+    {
+        FrameSize = GetFrameSize;
+    }
 
     public int GetFrameSize
     {

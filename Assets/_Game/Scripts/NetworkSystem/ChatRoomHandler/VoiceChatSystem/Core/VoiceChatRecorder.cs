@@ -1,56 +1,88 @@
 using System;
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Threading.Tasks;
 using Concentus;
 using Concentus.Enums;
 using Concentus.Structs;
 using UnityEngine;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Mathematics;
 
 public class VoiceChatRecorder : MonoBehaviour
 {
-    // Settings (Injected from Bridge)
+    [Header("Settings")]
     public KeyCode pushToTalkKey = KeyCode.V;
     public bool usePushToTalk = true;
+    [Range(0, 10)] public int OpusComplexity = 2;
 
-    // Public property for the Bridge to visualize
+    [Header("Network Optimization")]
+    // 5 frames * 20ms = 100ms added latency (acceptable for VoIP)
+    // Reduces network calls by 5x
+    [Range(1, 10)] public int BatchSize = 2; 
+
     public float CurrentVolume { get; private set; }
 
     private VoiceConfig _config;
-    private OpusEncoder _encoder;
     
     // Buffers
-    private byte[] _encodedBuffer;
-    private float[] _micBuffer;
-    private float[] _frameBuffer;
+    private float[] _micBuffer;       
+    private float[] _frameBufferFloat;
     private AudioRingBuffer _ringBuffer;
+
+    // Native
+    private NativeArray<float> _nativeInput;
+    private NativeArray<short> _nativeOutput;
+    private NativeArray<float> _nativeVolume; 
+
+    // Threading
+    private ConcurrentQueue<short[]> _encodeQueue;
+    private CancellationTokenSource _cancellationTokenSource;
+    private Task _encodeTask;
 
     private AudioClip _micClip;
     private string _device;
     private int _lastPos;
     private bool _isRecording;
     private IVoiceNetworkTransport _transport;
-
     private int _packetSequence = 0;
+
+    private void OnDestroy()
+    {
+        StopRecording();
+        if (_nativeInput.IsCreated) _nativeInput.Dispose();
+        if (_nativeOutput.IsCreated) _nativeOutput.Dispose();
+        if (_nativeVolume.IsCreated) _nativeVolume.Dispose();
+    }
 
     public void Initialize(IVoiceNetworkTransport transport, VoiceConfig config)
     {
         _transport = transport;
         _config = config;
 
-        // Initialize Opus Encoder (VoIP optimized)
-        _encoder = (OpusEncoder)OpusCodecFactory.CreateEncoder(_config.SampleRate, _config.Channels, OpusApplication.OPUS_APPLICATION_VOIP);
-        _encoder.Bitrate = _config.Bitrate; // 32kbps is Discord quality. Up to 64kbps for music.
-        _encoder.UseInbandFEC = _config.UseInbandFEC;
-        _encoder.SignalType = OpusSignal.OPUS_SIGNAL_VOICE;
+        // Allocations
+        int frameSize = _config.FrameSize * _config.Channels;
+        int micBufferSize = _config.SampleRate * _config.Channels;
 
-        // Resize Buffers
-        _frameBuffer = new float[_config.FrameSize * _config.Channels];
-        _encodedBuffer = new byte[1275]; 
-        _micBuffer = new float[_config.SampleRate * _config.Channels]; // 1 second mic capture buffer
+        _frameBufferFloat = new float[frameSize];
+        _micBuffer = new float[micBufferSize]; 
+        _ringBuffer = new AudioRingBuffer(micBufferSize); 
 
-        // Initialize Ring Buffer (Capacity = 1 second of audio to be safe)
-        // 48000 samples is plenty to handle Unity's mic update variability
-        _ringBuffer = new AudioRingBuffer(_config.SampleRate * _config.Channels); 
+        if (_nativeInput.IsCreated) _nativeInput.Dispose();
+        _nativeInput = new NativeArray<float>(frameSize, Allocator.Persistent);
+
+        if (_nativeOutput.IsCreated) _nativeOutput.Dispose();
+        _nativeOutput = new NativeArray<short>(frameSize, Allocator.Persistent);
         
-        // Restart Mic if running
+        if (_nativeVolume.IsCreated) _nativeVolume.Dispose();
+        _nativeVolume = new NativeArray<float>(1, Allocator.Persistent);
+
+        _encodeQueue = new ConcurrentQueue<short[]>();
+        _cancellationTokenSource = new CancellationTokenSource();
+        _encodeTask = Task.Run(() => EncoderWorker(_cancellationTokenSource.Token));
+
         if (_isRecording)
         {
             StopRecording();
@@ -58,30 +90,108 @@ public class VoiceChatRecorder : MonoBehaviour
         }
     }
 
+    // --- BATCHING WORKER ---
+    private void EncoderWorker(CancellationToken token)
+    {
+        var encoder = (OpusEncoder)OpusCodecFactory.CreateEncoder(_config.SampleRate, _config.Channels, OpusApplication.OPUS_APPLICATION_VOIP);
+        encoder.Complexity = OpusComplexity; 
+        encoder.Bitrate = _config.Bitrate;
+        encoder.UseInbandFEC = _config.UseInbandFEC;
+
+        int frameSize = _config.FrameSize;
+        byte[] tempEncodeBuffer = new byte[1275]; 
+
+        // Batch Buffer: [Length(2)][Data...][Length(2)][Data...]
+        // 4096 is plenty for ~10 opus packets
+        byte[] batchBuffer = new byte[4096]; 
+        int batchOffset = 0;
+        int framesInBatch = 0;
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                bool hasData = _encodeQueue.TryDequeue(out short[] pcmData);
+
+                if (hasData)
+                {
+                    try
+                    {
+                        // Encode
+                        int len = encoder.Encode(pcmData, 0, frameSize, tempEncodeBuffer, 0, tempEncodeBuffer.Length);
+
+                        if (len > 0)
+                        {
+                            // Append to Batch Buffer
+                            // Write Length (ushort) - 2 bytes
+                            batchBuffer[batchOffset] = (byte)(len & 0xFF);
+                            batchBuffer[batchOffset + 1] = (byte)((len >> 8) & 0xFF);
+                            batchOffset += 2;
+
+                            // Write Data
+                            Buffer.BlockCopy(tempEncodeBuffer, 0, batchBuffer, batchOffset, len);
+                            batchOffset += len;
+                            framesInBatch++;
+
+                            // Send if Batch is Full
+                            if (framesInBatch >= BatchSize)
+                            {
+                                FlushBatch(ref batchBuffer, ref batchOffset, ref framesInBatch);
+                            }
+                        }
+                    }
+                    catch (Exception ex) { Debug.LogError($"[VoiceWorker] {ex.Message}"); }
+                }
+                else
+                {
+                    // No data pending?
+                    // Check if we have a partial batch waiting to go
+                    if (framesInBatch > 0)
+                    {
+                        FlushBatch(ref batchBuffer, ref batchOffset, ref framesInBatch);
+                    }
+                    
+                    Thread.Sleep(5); // Sleep to save CPU
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    private void FlushBatch(ref byte[] buffer, ref int offset, ref int count)
+    {
+        if (count == 0) return;
+
+        // Create exact packet for network
+        byte[] packet = new byte[offset];
+        Buffer.BlockCopy(buffer, 0, packet, 0, offset);
+
+        // Reset Batch
+        offset = 0;
+        count = 0;
+
+        // Send to Main Thread
+        int seq = Interlocked.Increment(ref _packetSequence);
+        _transport.SendVoiceData(new ArraySegment<byte>(packet), seq);
+    }
+
+    // --- MAIN THREAD UPDATES ---
     private void Update()
     {
         HandleInput();
-
-        if (_isRecording)
-        {
-            ProcessMicrophone();
-        }
+        if (_isRecording) ProcessMicrophone();
     }
 
     private void HandleInput()
     {
         bool wantsToTalk = !usePushToTalk || Input.GetKey(pushToTalkKey);
-
-        if (wantsToTalk && !_isRecording)
-            StartRecording();
-        else if (!wantsToTalk && _isRecording)
-            StopRecording();
+        if (wantsToTalk && !_isRecording) StartRecording();
+        else if (!wantsToTalk && _isRecording) StopRecording();
     }
 
     public void StartRecording()
     {
         if (_config == null || Microphone.devices.Length == 0) return;
-        
         _device = Microphone.devices[0];
         _micClip = Microphone.Start(_device, true, 1, _config.SampleRate);
         _lastPos = 0;
@@ -90,94 +200,71 @@ public class VoiceChatRecorder : MonoBehaviour
 
     public void StopRecording()
     {
-        Microphone.End(_device);
+        if (!string.IsNullOrEmpty(_device)) Microphone.End(_device);
         _isRecording = false;
-        _ringBuffer.Clear();
+        if (_ringBuffer != null) _ringBuffer.Clear();
         CurrentVolume = 0;
     }
 
     private void ProcessMicrophone()
     {
+        int frameSize = _config.FrameSize;
+        if (frameSize <= 0) return;
+
         int currentPos = Microphone.GetPosition(_device);
-        if (currentPos == _lastPos) 
-            return;
+        if (currentPos == _lastPos) return;
 
-        // If FrameSize is invalid, we would loop forever here.
-        if (_config.FrameSize <= 0) 
-            return;
-
-        // Calculate samples available
         int diff = currentPos - _lastPos;
         if (diff < 0) diff += _config.SampleRate;
 
-        // Read from Unity Mic Clip into temp buffer
-        if (!_micClip.GetData(_micBuffer, _lastPos)) 
-            return;
-        
-        // Write directly to RingBuffer (Zero GC, Fast Copy)
-        // We only write 'diff' amount from the _micBuffer
+        if (!_micClip.GetData(_micBuffer, _lastPos)) return;
         _ringBuffer.Write(_micBuffer, diff);
-
         _lastPos = currentPos;
 
-        // Safety Counter: Never let this loop run more than 50 times in one frame
-        int safetyLoopCount = 0; 
-
-        // Process while enough data exists in RingBuffer for a full Opus Frame
-        while (_ringBuffer.Count >= _config.FrameSize)
+        int loops = 0;
+        while (_ringBuffer.Count >= frameSize && loops < 3)
         {
-            if (safetyLoopCount++ > 50) 
-            {
-                Debug.LogWarning("[VoiceChatRecorder] Recorder Buffer Overflow: Forced break to prevent freeze.");
-                _ringBuffer.Clear(); // Dump buffer to reset
-                break;
-            }
+            _ringBuffer.Read(_frameBufferFloat, frameSize);
+            _nativeInput.CopyFrom(_frameBufferFloat);
+            
+            var job = new AudioProcessJob { Input = _nativeInput, OutputShorts = _nativeOutput, MaxVolume = _nativeVolume };
+            job.Schedule().Complete(); 
 
-            // READ from RingBuffer into the FrameBuffer
-            _ringBuffer.Read(_frameBuffer, _config.FrameSize);
-
-            // Calculate Volume (VAD)
-            float maxVol = 0;
-            // A simple loop here is fine as it's small (480-960 iterations) and registers are fast
-            for (int i = 0; i < _config.FrameSize; i++)
-            {
-                float val = Mathf.Abs(_frameBuffer[i]);
-                if (val > maxVol) maxVol = val;
-            }
-
-            CurrentVolume = maxVol; 
+            float maxVol = _nativeVolume[0];
+            CurrentVolume = maxVol;
 
             if (maxVol > _config.SilenceThreshold)
             {
-                EncodeAndSend(_frameBuffer);
+                short[] copy = new short[frameSize];
+                _nativeOutput.CopyTo(copy);
+                _encodeQueue.Enqueue(copy);
             }
-
-            safetyLoopCount++;
+            loops++;
         }
     }
 
-    private void EncodeAndSend(float[] pcmData)
+    [BurstCompile(CompileSynchronously = true)]
+    struct AudioProcessJob : IJob
     {
-        try
-        {
-            // Pass Audio Input, Frame size, Output Buffer, Max Buffer Capacity
-            int encodedLength = _encoder.Encode(pcmData.AsSpan(), _config.FrameSize, _encodedBuffer.AsSpan(), _encodedBuffer.Length);
+        [ReadOnly] public NativeArray<float> Input;
+        [WriteOnly] public NativeArray<short> OutputShorts;
+        [WriteOnly] public NativeArray<float> MaxVolume;
 
-            if (encodedLength > 0)
+        public void Execute()
+        {
+            float maxVal = 0;
+            int len = Input.Length;
+            for (int i = 0; i < len; i++)
             {
-                byte[] packet = new byte[encodedLength];
-                System.Array.Copy(_encodedBuffer, packet, encodedLength);
+                float sample = Input[i];
+                float absVal = math.abs(sample);
+                if (absVal > maxVal) maxVal = absVal;
 
-                // Increment sequence (wrap around at int.MaxValue to be safe)
-                _packetSequence++; 
-
-                // Send both Data AND Sequence ID
-                _transport.SendVoiceData(packet, _packetSequence);
+                if (sample > 1.0f) sample = 1.0f;
+                if (sample < -1.0f) sample = -1.0f;
+                OutputShorts[i] = (short)(sample * 32767.0f);
             }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[VoiceChatRecorder] Opus Encode Error: {e.Message}");
+            MaxVolume[0] = maxVal;
         }
     }
 }

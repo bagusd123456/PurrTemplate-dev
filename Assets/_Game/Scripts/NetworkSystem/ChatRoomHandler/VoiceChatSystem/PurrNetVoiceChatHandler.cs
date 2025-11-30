@@ -1,3 +1,4 @@
+using System;
 using PurrNet;
 using PurrNet.Transports;
 using Sirenix.OdinInspector;
@@ -6,7 +7,7 @@ using UnityEngine;
 public interface IVoiceNetworkTransport
 {
     void Init();
-    void SendVoiceData(byte[] compressedData, int sequenceId);
+    void SendVoiceData(ArraySegment<byte> data, int sequence);
     void MuteInput(bool state);
     void SetOutputVolume(float volume);
     void MuteOutput(bool state);
@@ -113,11 +114,12 @@ public class PurrNetVoiceChatHandler : NetworkIdentity, IVoiceNetworkTransport
     /// Send current player voice data to all observer
     /// </summary>
     /// <param name="compressedData"></param>
-    public void SendVoiceData(byte[] compressedData, int sequenceId)
+    public void SendVoiceData(ArraySegment<byte> compressedData, int sequenceId)
     {
         if (NetworkManager.main.clientToServerConn != null)
         {
-            SendVoiceDataRpc(compressedData, sequenceId);
+            byte[] data = compressedData.ToArray();
+            SendVoiceDataRpc(data, sequenceId);
         }
     }
 
