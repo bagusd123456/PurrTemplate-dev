@@ -1,3 +1,4 @@
+using NyxMachina.Multiplayer;
 using NyxMachina.Shared.EventFramework;
 using NyxMachina.Shared.EventFramework.Core.Payloads;
 using PurrLobby;
@@ -15,46 +16,6 @@ using ConnectionState = PurrNet.Transports.ConnectionState;
 
 public class LobbyHandler
 {
-    public struct OnJoinLobby : IPayload
-    {
-        public Lobby CurrentLobby { get; private set; }
-
-        public OnJoinLobby(Lobby targetLobby)
-        {
-            CurrentLobby = targetLobby;
-        }
-    }
-
-    public struct OnLeftLobby : IPayload
-    {
-        public Lobby LastJoinedLobby { get; private set; }
-
-        public OnLeftLobby(Lobby lastJoinedLobby)
-        {
-            LastJoinedLobby = lastJoinedLobby;
-        }
-    }
-
-    public struct OnPlayerJoinLobby : IPayload
-    {
-        public LobbyUser UserData;
-
-        public OnPlayerJoinLobby(LobbyUser user)
-        {
-            UserData = user;
-        }
-    }
-
-    public struct OnPlayerLeftLobby : IPayload
-    {
-        public LobbyUser UserData;
-
-        public OnPlayerLeftLobby(LobbyUser user)
-        {
-            UserData = user;
-        }
-    }
-
     public static LobbyManager lobbyManager;
     public static NetworkManager networkManager;
     public static ChatRoomHandler chatRoomHandler;
@@ -70,40 +31,12 @@ public class LobbyHandler
         lobbyManager.OnRoomUpdated.RemoveListener(HandleRoomUpdated);
         lobbyManager.OnRoomUpdated.AddListener(HandleRoomUpdated);
 
+        // Remove old listeners to prevent duplicates if re-initialized
         networkManager.onPlayerJoined -= HandleOnPlayerJoin;
         networkManager.onPlayerLeft -= HandleOnPlayerLeft;
+        
         networkManager.onPlayerJoined += HandleOnPlayerJoin;
         networkManager.onPlayerLeft += HandleOnPlayerLeft;
-    }
-
-    private void HandleRoomUpdated(Lobby currentLobby)
-    {
-
-    }
-
-    private async void HandleOnPlayerLeft(PlayerID player, bool asServer)
-    {
-        if (player.isServer)
-        {
-            await LeaveLobbyAsync();
-            PlayerList.Clear();
-            return;
-        }
-
-        PlayerList.Remove(player.id.value);
-    }
-
-    private void HandleOnPlayerJoin(PlayerID player, bool isReconnect, bool asServer)
-    {
-        if (isReconnect)
-            return;
-
-        foreach (var lobbyUser in lobbyManager.CurrentLobby.Members)
-        {
-            // Sync LobbyUser with NetworkManagerUser
-        }
-
-        
     }
 
     public async Task<AsyncResult> Init()
@@ -121,13 +54,12 @@ public class LobbyHandler
             }
             steamCallbackTask = RunSteamCallback();
             await lobbyManager.CurrentProvider.InitializeAsync();
-            var prefab = Resources.Load("VoiceReceiver") as GameObject;
-            chatRoomHandler = new ChatRoomHandler(prefab);
+            
+            chatRoomHandler = new ChatRoomHandler();
         }
         catch (Exception e)
         {
-            errorMessage = $"[LobbyHandler] Steam Failed to init, unknown Error.\n" +
-                           $"{e.StackTrace}";
+            errorMessage = $"[LobbyHandler] Init Failed.\n{e.Message}";
             Debug.LogError(errorMessage);
             return AsyncResult.Fail(errorMessage);
         }
@@ -145,9 +77,12 @@ public class LobbyHandler
         }
     }
 
+    #region Lobby Logic
+
     [Command]
     public static async Task<AsyncResult<Lobby>> CreateLobbyAsync(int targetMaxPlayer = 4, Dictionary<string, string> targetRoomProperties = default)
     {
+        string steamAccountId = "";
         var errorMessage = "";
         Lobby createdLobby;
 
@@ -158,12 +93,14 @@ public class LobbyHandler
             var networkTransport = networkManager.transport;
             if (networkTransport is SteamTransport steamTransport)
             {
-                var steamAccountId = SteamUser.GetSteamID().ToString();
+                steamAccountId = SteamUser.GetSteamID().ToString();
                 targetRoomProperties["steamAccountId"] = steamAccountId;
+                steamTransport.address = steamAccountId;
             }
 
             targetRoomProperties["isStarted"] = "false";
             createdLobby = await lobbyManager.CurrentProvider.CreateLobbyAsync(targetMaxPlayer, targetRoomProperties);
+            
             var startServerTask = await StartClientServerAsync(networkTransport);
             if (startServerTask.IsFail)
             {
@@ -173,8 +110,8 @@ public class LobbyHandler
         }
         catch (Exception e)
         {
-            errorMessage = $"[LobbyHandler] Failed to create lobby.\n" +
-                               $"{e.StackTrace}";
+            errorMessage = $"Failed to create lobby.\n" +
+                           $"Unknown Error: {e.Message}";
             Debug.LogError(errorMessage);
             return AsyncResult<Lobby>.Fail(errorMessage);
         }
@@ -191,28 +128,74 @@ public class LobbyHandler
 
         try
         {
+            // Join Steam Lobby (Platform Layer)
+            Debug.Log("[LobbyHandler] Joining Steam Lobby...");
             currentLobby = await lobbyManager.CurrentProvider.JoinLobbyAsync(roomId);
-            var networkTransport = networkManager.transport;
+            
+            if (!currentLobby.IsValid) 
+                return AsyncResult<Lobby>.Fail("Steam Lobby is invalid.");
 
             if (!currentLobby.Properties.TryGetValue("steamAccountId", out var ownerSteamAccountId))
             {
-                errorMessage = $"[LobbyHandler] Failed to join lobby.\n" +
-                               $"Cannot find steamAccountId, please check the lobby properties.";
+                await LeaveLobbyAsync();
+                errorMessage = "Cannot find steamAccountId in lobby properties.";
                 Debug.LogError(errorMessage);
+                return AsyncResult<Lobby>.Fail(errorMessage);
             }
 
+            // Connect Transport (Physical Layer)
+            Debug.Log("[LobbyHandler] Connecting to Host via Transport...");
+            var networkTransport = networkManager.transport;
             var startClientTask = await StartClientAsync(networkTransport, ownerSteamAccountId);
+            
             if (startClientTask.IsFail)
             {
-                Debug.LogError(startClientTask.Message);
+                await LeaveLobbyAsync();
                 return AsyncResult<Lobby>.Fail(startClientTask.Message);
             }
+
+            // Handshake (Logic Layer via RPC)
+            Debug.Log("[LobbyHandler] Connection established. Validating with Host...");
+
+            if (LobbyNetworkHandler.Instance == null)
+            {
+                await LeaveLobbyAsync();
+                return AsyncResult<Lobby>.Fail("Failed to join Lobby.\n" +
+                                               "LobbyNetworkController missing from scene.");
+            }
+
+            string mySteamId = SteamUser.GetSteamID().ToString();
+            AsyncResult result;
+
+            try
+            {
+                // Awaitable RPC: Pauses here until Server replies
+                result = await LobbyNetworkHandler.Instance.ValidateHandshakeAsync_RPC(mySteamId);
+            }
+            catch (Exception e)
+            {
+                // Handle RPC Timeout or Transport drop during await
+                await LeaveLobbyAsync();
+                return AsyncResult<Lobby>.Fail($"Failed to join Lobby.\n" +
+                                               $"Handshake Failed, Unknown error: {e.Message}");
+            }
+
+            // Process Result
+            if (!result.IsSuccess)
+            {
+                Debug.LogWarning($"[LobbyHandler] Host rejected connection: {result.Message}");
+                await LeaveLobbyAsync();
+                return AsyncResult<Lobby>.Fail($"Connection Rejected: {result.Message}");
+            }
+
+            Debug.Log("[LobbyHandler] Join Successful!");
         }
         catch (Exception e)
         {
-            errorMessage = $"[LobbyHandler] Failed to join lobby.\n" +
-                               $"{e.StackTrace}";
+            errorMessage = $"[LobbyHandler] Exception during Join: {e.Message}" +
+                           $"\n{e.StackTrace}";
             Debug.LogError(errorMessage);
+            await LeaveLobbyAsync();
             return AsyncResult<Lobby>.Fail(errorMessage);
         }
 
@@ -225,116 +208,69 @@ public class LobbyHandler
     {
         var errorMessage = "";
         var currentLobby = lobbyManager.CurrentLobby;
-        if (!currentLobby.IsValid)
-        {
-            errorMessage = $"[LobbyHandler] Attempting to leave lobby, but none is joined.\n" +
-                           $"Doing nothing.";
-            Debug.LogWarning(errorMessage);
-            return AsyncResult.Fail(errorMessage);
-        }
-
+        
         try
         {
-            var steamTransport = networkManager.transport as SteamTransport;
-            if (steamTransport == null)
+            // Stop Networking
+            if (networkManager.isServer)
             {
-                errorMessage = $"[LobbyHandler] Failed to join lobby.\n" +
-                               $"Cannot find SteamTransport, please check the networkManager.";
-                Debug.LogError(errorMessage);
-            }
-
-            if (currentLobby.IsOwner)
-            {
-                await StopClientServerAsync(steamTransport);
+                await StopClientServerAsync(networkManager.transport);
             }
             else
             {
-                await StopClientAsync(steamTransport);
+                await StopClientAsync(networkManager.transport);
             }
 
-            await lobbyManager.CurrentProvider.LeaveLobbyAsync();
+            // Stop Steam Lobby
+            if (currentLobby.IsValid)
+            {
+                await lobbyManager.CurrentProvider.LeaveLobbyAsync();
+                EVENT.Publish(new OnLeftLobby(currentLobby));
+            }
+            
+            PlayerList.Clear();
         }
         catch (Exception e)
         {
-            errorMessage = $"[LobbyHandler] Failed to leave lobby.\n" +
-                               $"{e.StackTrace}";
-            Debug.LogError(errorMessage);
+            errorMessage = $"Failed to leave lobby.\n{e.Message}";
+            Debug.LogError($"[LobbyHandler] {errorMessage}");
             return AsyncResult.Fail(errorMessage);
         }
         return AsyncResult.Success();
     }
 
+    #endregion
+
+    #region Gameplay State Management
+
     [Command]
     public static async Task<AsyncResult> SetIsReadyAsync(bool targetState)
     {
-        var errorMessage = "";
-        var currentLobby = lobbyManager.CurrentLobby;
-        var targetUserId = string.Empty;
+        var localUserId = await lobbyManager.CurrentProvider.GetLocalUserIdAsync();
+        if (string.IsNullOrWhiteSpace(localUserId)) 
+            return AsyncResult.Fail("Local User ID is null.");
 
-        if (!currentLobby.IsValid)
-        {
-            errorMessage = $"[LobbyHandler] Attempting to set '{targetUserId}' ready state to '{targetState}', but none is joined.\n" +
-                           $"Doing nothing.";
-            Debug.LogWarning(errorMessage);
-            return AsyncResult.Fail(errorMessage);
-        }
-
-        var localUserId = lobbyManager.CurrentProvider.GetLocalUserIdAsync().Result;
-        if (string.IsNullOrWhiteSpace(localUserId))
-        {
-            errorMessage = $"[LobbyHandler] Can't toggle ready state, local user ID is null or empty.\n" +
-                        $"Doing nothing.";
-            Debug.LogWarning(errorMessage);
-            return AsyncResult.Fail(errorMessage);
-        }
-
-        var localLobbyUser = currentLobby.Members.Find(x => x.Id == localUserId);
-        targetUserId = localLobbyUser.Id;
-        localLobbyUser.IsReady = targetState;
-
-        var setReadyTask = await SetIsReadyAsync(targetUserId, targetState);
-        return setReadyTask;
+        return await SetIsReadyAsync(localUserId, targetState);
     }
 
     public static async Task<AsyncResult> SetIsReadyAsync(string targetUserId, bool targetState)
     {
-        var errorMessage = "";
-
         try
         {
             await lobbyManager.CurrentProvider.SetIsReadyAsync(targetUserId, targetState);
         }
         catch (Exception e)
         {
-            errorMessage = $"[LobbyHandler] Failed to set '{targetUserId}' ready state to '{targetState}'.\n" +
-                               $"{e.StackTrace}";
-            Debug.LogError(errorMessage);
-            return AsyncResult.Fail(errorMessage);
+            return AsyncResult.Fail(e.Message);
         }
-
         return AsyncResult.Success();
     }
 
     [Command]
     public static async Task<AsyncResult> SetAllReadyAsync()
     {
-        var errorMessage = "";
-        var currentLobby = lobbyManager.CurrentLobby;
-        if (!currentLobby.IsValid)
-        {
-            errorMessage = $"[LobbyHandler] Failed to SetAllReady.\n" +
-                           $"None is joined.";
-            Debug.LogWarning(errorMessage);
-            return AsyncResult.Fail(errorMessage);
-        }
-
-        if (!currentLobby.IsOwner)
-        {
-            errorMessage = $"[LobbyHandler] Failed to SetAllReady.\n" +
-                           $"User is not the owner.";
-            Debug.LogWarning(errorMessage);
-            return AsyncResult.Fail(errorMessage);
-        }
+        if (!lobbyManager.CurrentLobby.IsValid || !lobbyManager.CurrentLobby.IsOwner)
+            return AsyncResult.Fail("Invalid lobby or not owner.");
 
         try
         {
@@ -342,50 +278,33 @@ public class LobbyHandler
         }
         catch (Exception e)
         {
-            errorMessage = $"[LobbyHandler] Failed to SetAllReady.\n" +
-                           $"{e.StackTrace}";
-            Debug.LogError(errorMessage);
-            return AsyncResult.Fail(errorMessage);
+            return AsyncResult.Fail(e.Message);
         }
-
         return AsyncResult.Success();
     }
 
     [Command]
     public static async Task<AsyncResult> SetLobbyStartedAsync()
     {
-        var errorMessage = "";
-        var currentLobby = lobbyManager.CurrentLobby;
-        if (!currentLobby.IsValid)
-        {
-            errorMessage = $"[LobbyHandler] Attempting to started game for joined lobby, but none is joined.\n" +
-                           $"Doing nothing.";
-            Debug.LogWarning(errorMessage);
-            return AsyncResult.Fail(errorMessage);
-        }
+        if (!lobbyManager.CurrentLobby.IsValid)
+            return AsyncResult.Fail("No lobby joined.");
 
         try
         {
             await lobbyManager.CurrentProvider.SetLobbyStartedAsync();
-            currentLobby.Properties["isStarted"] = "true";
+            lobbyManager.CurrentLobby.Properties["isStarted"] = "true";
             await lobbyManager.CurrentProvider.SetLobbyDataAsync("isStarted", "true");
         }
         catch (Exception e)
         {
-            errorMessage = $"[LobbyHandler] Failed to start game for joined lobby.\n" +
-                               $"{e.StackTrace}";
-            Debug.LogError(errorMessage);
-            return AsyncResult.Fail(errorMessage);
+            return AsyncResult.Fail(e.Message);
         }
-
         return AsyncResult.Success();
     }
 
     public static async Task<AsyncResult<List<Lobby>>> SearchLobbyAsync(int maxRoomsToFind = 10, Dictionary<string, string> filters = null)
     {
-        var errorMessage = "";
         filters ??= new Dictionary<string, string>();
-
         try
         {
             var result = await lobbyManager.CurrentProvider.SearchLobbiesAsync(maxRoomsToFind, filters);
@@ -393,170 +312,168 @@ public class LobbyHandler
         }
         catch (Exception e)
         {
-            errorMessage = $"[LobbyHandler] Failed to start game for joined lobby.\n" +
-                           $"{e.StackTrace}";
-            Debug.LogWarning(errorMessage);
-            return AsyncResult<List<Lobby>>.Fail(errorMessage);
+            return AsyncResult<List<Lobby>>.Fail(e.Message);
         }
     }
 
+    #endregion
 
-    #region Server Execution Handler
+    #region Network Events & Sync
 
-    private static async Task<AsyncResult> StartClientAsync(GenericTransport networkTransport, string targetAddress = "")
+    private void HandleRoomUpdated(Lobby currentLobby)
     {
-        var cts = new CancellationTokenSource(5000);
-        var tcs = new TaskCompletionSource<AsyncResult>();
+        // Handle visual updates or UI refreshes here
+    }
 
-        while (!cts.IsCancellationRequested)
+    private async void HandleOnPlayerLeft(PlayerID player, bool asServer)
+    {
+        // Remove from local dictionary
+        if (PlayerList.ContainsKey(player.id.value))
         {
-            if (networkTransport is SteamTransport steamTransport)
-            {
-                if (!string.IsNullOrWhiteSpace(targetAddress))
-                {
-                    steamTransport.address = targetAddress;
-                }
-            }
-
-            networkManager.onClientConnectionState += ListenConnectionState;
-            networkManager.StartClient();
-            var result = await tcs.Task;
-            networkManager.onClientConnectionState -= ListenConnectionState;
-            return result;
+            var user = PlayerList[player.id.value];
+            PlayerList.Remove(player.id.value);
         }
 
-        return AsyncResult.Fail($"[LobbyHandler] StartClientAsync Request Time Out.");
-
-        void ListenConnectionState(ConnectionState state)
+        // If WE are the client and WE lost connection unexpectedly
+        if (!asServer)
         {
-            if (state is ConnectionState.Disconnected)
+            // Check if the player leaving is NOT us (meaning we didn't initiate a quit)
+            // AND the network state is disconnected (meaning the cable was pulled or host crashed)
+            if (player.IsLocal() && 
+                (networkManager.clientState == ConnectionState.Disconnected || 
+                 networkManager.clientState == ConnectionState.Disconnecting))
             {
-                var errorMessage = $"[LobbyHandler] Cannot connect to Host.\n" +
-                                $"Unknown error.";
-                tcs.TrySetResult(AsyncResult.Fail(errorMessage));
-                return;
+                Debug.LogWarning("[LobbyHandler] Lost connection to server. Leaving Steam Lobby.");
+                await LeaveLobbyAsync();
             }
-            else if (state is ConnectionState.Connected)
+        }
+    }
+
+    private void HandleOnPlayerJoin(PlayerID player, bool isReconnect, bool asServer)
+    {
+        // Note: Logic validation is now done in LobbyNetworkController via RPC
+        // This callback is mostly for logging or raw transport events.
+        if (isReconnect) 
+            return;
+
+        Debug.Log($"[LobbyHandler] Player with id '{player.id}' connected via Transport.");
+
+        if (asServer)
+        {
+            LobbyUser lobbyUser = lobbyManager.CurrentLobby.Members.Find(x => x.Id == SteamUser.GetSteamID().ToString());
+            PlayerList[player.id.value] = lobbyUser;
+        }
+    }
+
+    #endregion
+
+    #region TRANSPORT EXECUTION HANDLER
+
+    private static async Task<AsyncResult> StartClientAsync(GenericTransport networkTransport, string targetAddress)
+    {
+        var tcs = new TaskCompletionSource<AsyncResult>();
+        // 5 Second Timeout
+        var cts = new CancellationTokenSource(5000);
+
+        void OnConnectionStateChange(ConnectionState state)
+        {
+            if (state == ConnectionState.Connected)
             {
                 tcs.TrySetResult(AsyncResult.Success());
             }
+            else if (state == ConnectionState.Disconnected)
+            {
+                // Only fail if we haven't succeeded yet
+                tcs.TrySetResult(AsyncResult.Fail("Disconnected before connection could be established."));
+            }
+        }
+
+        // Register Timeout
+        cts.Token.Register(() => tcs.TrySetResult(AsyncResult.Fail("Connection timed out.")));
+
+        try
+        {
+            if (networkTransport is SteamTransport steamTransport)
+            {
+                steamTransport.address = targetAddress;
+            }
+
+            networkManager.onClientConnectionState += OnConnectionStateChange;
+            networkManager.StartClient();
+
+            return await tcs.Task;
+        }
+        finally
+        {
+            networkManager.onClientConnectionState -= OnConnectionStateChange;
+            cts.Dispose();
         }
     }
 
     private static async Task<AsyncResult> StopClientAsync(GenericTransport networkTransport)
     {
-        using var cts = new CancellationTokenSource(5000);
-        var tcs = new TaskCompletionSource<AsyncResult>();
-
-        while (!cts.IsCancellationRequested)
-        {
-            if (networkTransport is SteamTransport steamTransport)
-            {
-                steamTransport.address = "";
-            }
-
-            networkManager.onClientConnectionState += ListenConnectionState;
-            networkManager.StopClient();
-            var result = await tcs.Task;
-            networkManager.onClientConnectionState -= ListenConnectionState;
-            return result;
-        }
-
-        return AsyncResult.Fail($"[LobbyHandler] StopClientAsync Request Time Out.");
-
-        void ListenConnectionState(ConnectionState state)
-        {
-            if (state is ConnectionState.Disconnected)
-            {
-                tcs.TrySetResult(AsyncResult.Success());
-                return;
-            }
-        }
+        if (networkTransport is SteamTransport steamTransport) steamTransport.address = "";
+        networkManager.StopClient();
+        return AsyncResult.Success();
     }
 
     private static async Task<AsyncResult> StartClientServerAsync(GenericTransport networkTransport)
     {
-        using var cts = new CancellationTokenSource(5000);
         var tcs = new TaskCompletionSource<AsyncResult>();
+        var cts = new CancellationTokenSource(5000);
 
-        while (!cts.IsCancellationRequested)
+        void OnServerStateChange(ConnectionState state)
         {
+            if (state == ConnectionState.Connected) tcs.TrySetResult(AsyncResult.Success());
+            else if (state == ConnectionState.Disconnected) tcs.TrySetResult(AsyncResult.Fail("Server failed to start."));
+        }
+        
+        cts.Token.Register(() => tcs.TrySetResult(AsyncResult.Fail("Server start timed out.")));
+
+        try
+        {
+            string address = "";
+
             if (networkTransport is SteamTransport steamTransport)
             {
-                var steamAccountId = SteamUser.GetSteamID().ToString();
-                steamTransport.address = steamAccountId;
+                address = steamTransport.address;
             }
 
-            networkManager.onServerConnectionState += ListenConnectionState;
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                return AsyncResult.Fail("Server failed to start.\n" +
+                                        "Address is null!");
+            }
+
+            networkManager.onServerConnectionState += OnServerStateChange;
             networkManager.StartServer();
-            var startServerResult = await tcs.Task;
-            networkManager.onServerConnectionState -= ListenConnectionState;
-            if (startServerResult.IsFail)
-            {
-                return startServerResult;
-            }
 
-            var startClientResult = await StartClientAsync(networkTransport);
-            return startClientResult;
+            var serverResult = await tcs.Task;
+            if (serverResult.IsFail) return serverResult;
+
+            // Start Client (Host)
+            return await StartClientAsync(networkTransport, address);
         }
-
-        return AsyncResult.Fail($"[LobbyHandler] StartClientServerAsync Request Time Out.");
-
-        void ListenConnectionState(ConnectionState state)
+        catch (Exception e)
         {
-            if (state is ConnectionState.Disconnected)
-            {
-                var errorMessage = $"[LobbyHandler] Cannot start as host.\n" +
-                                $"Unknown error.";
-                tcs.TrySetResult(AsyncResult.Fail(errorMessage));
-                return;
-            }
-            else if (state is ConnectionState.Connected)
-            {
-                tcs.TrySetResult(AsyncResult.Success());
-            }
+            return AsyncResult.Fail($"Server failed to start.\n" +
+                                    $"Unknown error: {e}");
+        }
+        finally
+        {
+            networkManager.onServerConnectionState -= OnServerStateChange;
+            cts.Dispose();
         }
     }
 
     private static async Task<AsyncResult> StopClientServerAsync(GenericTransport networkTransport)
     {
-        var cts = new CancellationTokenSource(5000);
-        var tcs = new TaskCompletionSource<AsyncResult>();
-
-        while (!cts.IsCancellationRequested)
-        {
-            if (networkTransport is SteamTransport steamTransport)
-            {
-                steamTransport.address = "";
-            }
-
-            var stopClientResult = await StopClientAsync(networkTransport);
-            if (stopClientResult.IsFail)
-            {
-                return stopClientResult;
-            }
-            networkManager.onServerConnectionState += ListenConnectionState;
-            networkManager.StopServer();
-            var stopServerResult = await tcs.Task;
-            networkManager.onServerConnectionState -= ListenConnectionState;
-            return stopServerResult;
-        }
-
-        return AsyncResult.Fail($"[LobbyHandler] StopClientServer Request Time Out.");
-
-        void ListenConnectionState(ConnectionState state)
-        {
-            if (state is ConnectionState.Disconnected)
-            {
-                tcs.TrySetResult(AsyncResult.Success());
-                return;
-            }
-        }
-    }
-
-    private void ClientConnectedRPC()
-    {
-
+        if (networkTransport is SteamTransport steamTransport) steamTransport.address = "";
+        
+        await StopClientAsync(networkTransport); // Stop Client side first
+        networkManager.StopServer(); // Stop Server side
+        
+        return AsyncResult.Success();
     }
 
     #endregion
@@ -571,7 +488,17 @@ public static class LobbyHandlerUtil
             Debug.LogWarning($"Cannot found LobbyUserData with clientId '{clientId}'.");
             return default;
         }
-
         return result;
+    }
+}
+
+public static class PlayerIDExtensions
+{
+    public static bool IsLocal(this PlayerID player)
+    {
+        // Ensure NetworkManager exists to avoid errors during shutdown
+        if (NetworkManager.main == null) return false;
+        
+        return player == NetworkManager.main.localPlayer;
     }
 }

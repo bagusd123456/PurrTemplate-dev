@@ -5,6 +5,7 @@ using Steamworks;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using NyxMachina.Multiplayer;
 using UnityEngine;
 
 public class ChatRoomHandler
@@ -44,18 +45,16 @@ public class ChatRoomHandler
 
     public List<IVoiceNetworkTransport> VoiceChatHandlerList = new();
 
-    private readonly VoiceHandlerPool _voicePool;
-
-    public ChatRoomHandler(GameObject voicePrefab)
+    public ChatRoomHandler()
     {
         TransmissionTaskCancellation = new CancellationTokenSource();
 
         _lobbyChatMsg = Callback<LobbyChatMsg_t>.Create(OnReceivedChatMessage);
         
-        EVENT.Subscribe<LobbyHandler.OnLeftLobby>(HandleOnLeftLobby);
-        EVENT.Subscribe<LobbyHandler.OnJoinLobby>(HandleOnJoinLobby);
-        EVENT.Subscribe<LobbyHandler.OnPlayerLeftLobby>(HandleOnPlayerLeftLobby);
-        EVENT.Subscribe<LobbyHandler.OnPlayerJoinLobby>(HandleOnPlayerJoinLobby);
+        EVENT.Subscribe<OnLeftLobby>(HandleOnLeftLobby);
+        EVENT.Subscribe<OnJoinLobby>(HandleOnJoinLobby);
+        EVENT.Subscribe<OnPlayerLeftLobby>(HandleOnPlayerLeftLobby);
+        EVENT.Subscribe<OnPlayerJoinLobby>(HandleOnPlayerJoinLobby);
 
         Application.wantsToQuit -= HandleApplicationQuit;
         Application.wantsToQuit += HandleApplicationQuit;
@@ -63,42 +62,42 @@ public class ChatRoomHandler
         SetVoiceMode(VoiceMode.VoiceActivity);
     }
 
-    private void HandleOnPlayerJoinLobby(LobbyHandler.OnPlayerJoinLobby obj)
+    private void HandleOnPlayerJoinLobby(OnPlayerJoinLobby evt)
     {
         
     }
 
-    private void HandleOnPlayerLeftLobby(LobbyHandler.OnPlayerLeftLobby obj)
+    private void HandleOnPlayerLeftLobby(OnPlayerLeftLobby evt)
     {
         
     }
 
-    private bool HandleApplicationQuit()
-    {
-        Shutdown();
-        return true;
-    }
-
-    private void HandleOnJoinLobby(LobbyHandler.OnJoinLobby obj)
+    private void HandleOnJoinLobby(OnJoinLobby evt)
     {
         // Convert LobbyId (string) to ulong, then to CSteamID
-        if (ulong.TryParse(obj.CurrentLobby.LobbyId, out var ulongLobbyId))
+        if (ulong.TryParse(evt.CurrentLobby.LobbyId, out var ulongLobbyId))
         {
             var convertedLobbyId = new CSteamID(ulongLobbyId);
             _currentLobbyID = convertedLobbyId;
         }
         else
         {
-            Debug.LogError($"[ChatRoomHandler] Failed to parse LobbyId: {obj.CurrentLobby.LobbyId}");
+            Debug.LogError($"[ChatRoomHandler] Failed to parse LobbyId: {evt.CurrentLobby.LobbyId}");
         }
     }
 
-    private void HandleOnLeftLobby(LobbyHandler.OnLeftLobby obj)
+    private void HandleOnLeftLobby(OnLeftLobby evt)
     {
         foreach (var voiceNetworkTransport in VoiceChatHandlerList)
         {
             voiceNetworkTransport.Shutdown();
         }
+    }
+
+    private bool HandleApplicationQuit()
+    {
+        Shutdown();
+        return true;
     }
 
     // Sets the desired voice recording mode
@@ -174,10 +173,10 @@ public class ChatRoomHandler
     public void Shutdown()
     {
         _lobbyChatMsg = null;
-        EVENT.Unsubscribe<LobbyHandler.OnLeftLobby>(HandleOnLeftLobby);
-        EVENT.Unsubscribe<LobbyHandler.OnJoinLobby>(HandleOnJoinLobby);
-        EVENT.Unsubscribe<LobbyHandler.OnPlayerLeftLobby>(HandleOnPlayerLeftLobby);
-        EVENT.Unsubscribe<LobbyHandler.OnPlayerJoinLobby>(HandleOnPlayerJoinLobby);
+        EVENT.Unsubscribe<OnLeftLobby>(HandleOnLeftLobby);
+        EVENT.Unsubscribe<OnJoinLobby>(HandleOnJoinLobby);
+        EVENT.Unsubscribe<OnPlayerLeftLobby>(HandleOnPlayerLeftLobby);
+        EVENT.Unsubscribe<OnPlayerJoinLobby>(HandleOnPlayerJoinLobby);
         TransmissionTaskCancellation.Cancel();
     }
 }

@@ -442,7 +442,6 @@ GameObject:
   - component: {fileID: 160066916}
   - component: {fileID: 160066915}
   - component: {fileID: 160066914}
-  - component: {fileID: 160066919}
   - component: {fileID: 160066918}
   m_Layer: 0
   m_Name: Cone
@@ -574,22 +573,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 160066912}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 160066915}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &160066919
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 160066912}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -611,7 +594,6 @@ GameObject:
   - component: {fileID: 228847801}
   - component: {fileID: 228847800}
   - component: {fileID: 228847799}
-  - component: {fileID: 228847804}
   - component: {fileID: 228847803}
   m_Layer: 0
   m_Name: Cone
@@ -743,22 +725,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 228847797}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 228847800}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &228847804
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 228847797}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -780,7 +746,6 @@ GameObject:
   - component: {fileID: 339336053}
   - component: {fileID: 339336052}
   - component: {fileID: 339336051}
-  - component: {fileID: 339336056}
   - component: {fileID: 339336055}
   m_Layer: 0
   m_Name: Cone
@@ -912,22 +877,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 339336049}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 339336052}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &339336056
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 339336049}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -949,7 +898,6 @@ GameObject:
   - component: {fileID: 348911940}
   - component: {fileID: 348911939}
   - component: {fileID: 348911938}
-  - component: {fileID: 348911943}
   - component: {fileID: 348911942}
   m_Layer: 0
   m_Name: Cone
@@ -1081,22 +1029,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 348911936}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 348911939}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &348911943
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 348911936}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -1118,7 +1050,6 @@ GameObject:
   - component: {fileID: 354750142}
   - component: {fileID: 354750141}
   - component: {fileID: 354750140}
-  - component: {fileID: 354750145}
   - component: {fileID: 354750144}
   m_Layer: 0
   m_Name: Cone
@@ -1250,22 +1181,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 354750138}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 354750141}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &354750145
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 354750138}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -1349,7 +1264,6 @@ GameObject:
   - component: {fileID: 446298540}
   - component: {fileID: 446298539}
   - component: {fileID: 446298538}
-  - component: {fileID: 446298543}
   - component: {fileID: 446298542}
   m_Layer: 0
   m_Name: Cone
@@ -1473,22 +1387,6 @@ MeshFilter:
   m_GameObject: {fileID: 446298536}
   m_Mesh: {fileID: 3613567641014311022, guid: aa35326e084c5774b9fea1733afca70f, type: 3}
 --- !u!114 &446298542
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 446298536}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 446298539}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &446298543
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2230,7 +2128,6 @@ GameObject:
   - component: {fileID: 689600288}
   - component: {fileID: 689600287}
   - component: {fileID: 689600286}
-  - component: {fileID: 689600291}
   - component: {fileID: 689600290}
   m_Layer: 0
   m_Name: Cone
@@ -2362,22 +2259,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 689600284}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 689600287}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &689600291
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 689600284}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -2399,7 +2280,6 @@ GameObject:
   - component: {fileID: 947214811}
   - component: {fileID: 947214810}
   - component: {fileID: 947214809}
-  - component: {fileID: 947214814}
   - component: {fileID: 947214813}
   m_Layer: 0
   m_Name: Cone
@@ -2531,22 +2411,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 947214807}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 947214810}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &947214814
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 947214807}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -2568,7 +2432,6 @@ GameObject:
   - component: {fileID: 999111296}
   - component: {fileID: 999111295}
   - component: {fileID: 999111294}
-  - component: {fileID: 999111299}
   - component: {fileID: 999111298}
   m_Layer: 0
   m_Name: Cone
@@ -2692,22 +2555,6 @@ MeshFilter:
   m_GameObject: {fileID: 999111292}
   m_Mesh: {fileID: 3613567641014311022, guid: aa35326e084c5774b9fea1733afca70f, type: 3}
 --- !u!114 &999111298
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 999111292}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 999111295}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &999111299
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2840,7 +2687,6 @@ GameObject:
   - component: {fileID: 1166051428}
   - component: {fileID: 1166051427}
   - component: {fileID: 1166051426}
-  - component: {fileID: 1166051431}
   - component: {fileID: 1166051430}
   m_Layer: 0
   m_Name: Cone
@@ -2972,22 +2818,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1166051424}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1166051427}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1166051431
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1166051424}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -3009,7 +2839,6 @@ GameObject:
   - component: {fileID: 1267731287}
   - component: {fileID: 1267731286}
   - component: {fileID: 1267731285}
-  - component: {fileID: 1267731290}
   - component: {fileID: 1267731289}
   m_Layer: 0
   m_Name: Cone
@@ -3141,22 +2970,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1267731283}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1267731286}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1267731290
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1267731283}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -3178,7 +2991,6 @@ GameObject:
   - component: {fileID: 1301108329}
   - component: {fileID: 1301108328}
   - component: {fileID: 1301108327}
-  - component: {fileID: 1301108332}
   - component: {fileID: 1301108331}
   m_Layer: 0
   m_Name: Cone
@@ -3310,22 +3122,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1301108325}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1301108328}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1301108332
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1301108325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -3347,7 +3143,6 @@ GameObject:
   - component: {fileID: 1309821757}
   - component: {fileID: 1309821756}
   - component: {fileID: 1309821755}
-  - component: {fileID: 1309821760}
   - component: {fileID: 1309821759}
   m_Layer: 0
   m_Name: Cone
@@ -3479,22 +3274,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1309821753}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1309821756}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1309821760
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1309821753}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -3516,7 +3295,6 @@ GameObject:
   - component: {fileID: 1331393353}
   - component: {fileID: 1331393352}
   - component: {fileID: 1331393351}
-  - component: {fileID: 1331393356}
   - component: {fileID: 1331393355}
   m_Layer: 0
   m_Name: Cone
@@ -3648,22 +3426,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1331393349}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1331393352}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1331393356
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1331393349}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -3685,7 +3447,6 @@ GameObject:
   - component: {fileID: 1397381304}
   - component: {fileID: 1397381303}
   - component: {fileID: 1397381302}
-  - component: {fileID: 1397381307}
   - component: {fileID: 1397381306}
   m_Layer: 0
   m_Name: Cone
@@ -3817,22 +3578,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1397381300}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1397381303}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1397381307
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1397381300}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -3854,7 +3599,6 @@ GameObject:
   - component: {fileID: 1410572424}
   - component: {fileID: 1410572423}
   - component: {fileID: 1410572422}
-  - component: {fileID: 1410572427}
   - component: {fileID: 1410572426}
   m_Layer: 0
   m_Name: Cone
@@ -3986,22 +3730,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1410572420}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1410572423}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1410572427
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1410572420}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -4023,7 +3751,6 @@ GameObject:
   - component: {fileID: 1429359613}
   - component: {fileID: 1429359612}
   - component: {fileID: 1429359611}
-  - component: {fileID: 1429359616}
   - component: {fileID: 1429359615}
   m_Layer: 0
   m_Name: Cone
@@ -4155,22 +3882,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1429359609}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1429359612}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1429359616
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1429359609}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -4192,7 +3903,6 @@ GameObject:
   - component: {fileID: 1431606404}
   - component: {fileID: 1431606403}
   - component: {fileID: 1431606402}
-  - component: {fileID: 1431606407}
   - component: {fileID: 1431606406}
   m_Layer: 0
   m_Name: Cone
@@ -4324,22 +4034,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1431606400}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1431606403}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1431606407
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1431606400}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -4361,7 +4055,6 @@ GameObject:
   - component: {fileID: 1469105323}
   - component: {fileID: 1469105322}
   - component: {fileID: 1469105321}
-  - component: {fileID: 1469105326}
   - component: {fileID: 1469105325}
   m_Layer: 0
   m_Name: Cone
@@ -4493,22 +4186,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1469105319}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1469105322}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1469105326
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1469105319}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -4530,7 +4207,6 @@ GameObject:
   - component: {fileID: 1523335126}
   - component: {fileID: 1523335125}
   - component: {fileID: 1523335124}
-  - component: {fileID: 1523335129}
   - component: {fileID: 1523335128}
   m_Layer: 0
   m_Name: Cone
@@ -4654,22 +4330,6 @@ MeshFilter:
   m_GameObject: {fileID: 1523335122}
   m_Mesh: {fileID: 3613567641014311022, guid: aa35326e084c5774b9fea1733afca70f, type: 3}
 --- !u!114 &1523335128
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1523335122}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1523335125}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1523335129
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4826,7 +4486,6 @@ GameObject:
   - component: {fileID: 1636959114}
   - component: {fileID: 1636959113}
   - component: {fileID: 1636959112}
-  - component: {fileID: 1636959117}
   - component: {fileID: 1636959116}
   m_Layer: 0
   m_Name: Cone
@@ -4958,22 +4617,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1636959110}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1636959113}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1636959117
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1636959110}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -4995,7 +4638,6 @@ GameObject:
   - component: {fileID: 1640412881}
   - component: {fileID: 1640412880}
   - component: {fileID: 1640412879}
-  - component: {fileID: 1640412884}
   - component: {fileID: 1640412883}
   m_Layer: 0
   m_Name: Cone
@@ -5127,22 +4769,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1640412877}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1640412880}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1640412884
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1640412877}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -5164,7 +4790,6 @@ GameObject:
   - component: {fileID: 1652756603}
   - component: {fileID: 1652756602}
   - component: {fileID: 1652756601}
-  - component: {fileID: 1652756606}
   - component: {fileID: 1652756605}
   m_Layer: 0
   m_Name: Cone
@@ -5288,22 +4913,6 @@ MeshFilter:
   m_GameObject: {fileID: 1652756599}
   m_Mesh: {fileID: 3613567641014311022, guid: aa35326e084c5774b9fea1733afca70f, type: 3}
 --- !u!114 &1652756605
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1652756599}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 1652756602}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &1652756606
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5771,7 +5380,6 @@ GameObject:
   - component: {fileID: 2007649511}
   - component: {fileID: 2007649510}
   - component: {fileID: 2007649509}
-  - component: {fileID: 2007649514}
   - component: {fileID: 2007649513}
   m_Layer: 0
   m_Name: Cone
@@ -5903,22 +5511,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 2007649507}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 2007649510}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &2007649514
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2007649507}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -5940,7 +5532,6 @@ GameObject:
   - component: {fileID: 2052607232}
   - component: {fileID: 2052607231}
   - component: {fileID: 2052607230}
-  - component: {fileID: 2052607235}
   - component: {fileID: 2052607234}
   m_Layer: 0
   m_Name: Cone
@@ -6072,22 +5663,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 2052607228}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 2052607231}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &2052607235
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2052607228}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -6109,7 +5684,6 @@ GameObject:
   - component: {fileID: 2071016385}
   - component: {fileID: 2071016384}
   - component: {fileID: 2071016383}
-  - component: {fileID: 2071016388}
   - component: {fileID: 2071016387}
   m_Layer: 0
   m_Name: Cone
@@ -6241,22 +5815,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 2071016381}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 2071016384}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &2071016388
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2071016381}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 98dbb08343eac044895b9b52872bcb49, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
@@ -6278,7 +5836,6 @@ GameObject:
   - component: {fileID: 2112862780}
   - component: {fileID: 2112862779}
   - component: {fileID: 2112862778}
-  - component: {fileID: 2112862783}
   - component: {fileID: 2112862782}
   m_Layer: 0
   m_Name: Cone
@@ -6402,22 +5959,6 @@ MeshFilter:
   m_GameObject: {fileID: 2112862776}
   m_Mesh: {fileID: 3613567641014311022, guid: aa35326e084c5774b9fea1733afca70f, type: 3}
 --- !u!114 &2112862782
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2112862776}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 2112862779}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &2112862783
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -7122,7 +6663,6 @@ GameObject:
   - component: {fileID: 1622145356611575199}
   - component: {fileID: 470381284}
   - component: {fileID: 470381283}
-  - component: {fileID: 9013638941438616261}
   - component: {fileID: 9013638941438616260}
   m_Layer: 0
   m_Name: Cone
@@ -7132,22 +6672,6 @@ GameObject:
   m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!114 &9013638941438616260
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9013638941438616259}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 939517533de889a4f948d4e2041fb798, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 470381284}
-  _floatAccuracy: 2
-  _eventMask: 63
-  _ignoreTriggerOnTrigger: 1
---- !u!114 &9013638941438616261
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

@@ -1,8 +1,7 @@
+using PurrNet;
 using PurrNet.Prediction;
 using System;
-using PurrNet;
 using UnityEngine;
-using UnityEngine.Animations;
 using UnityEngine.UI;
 
 public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHandler.State>
@@ -77,6 +76,14 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
     {
         if (isOwner)
         {
+            string ownerName = "NULL";
+            ulong clientId = 0;
+            if (owner.HasValue)
+            {
+                clientId = owner.Value.id.value;
+                ownerName = LobbyHandlerUtil.GetLobbyUserByClientId(clientId).DisplayName;
+            }
+
             if (cameraTarget == null)
             {
                 // If user forgot to assign it, create a temporary one to avoid crashes
@@ -103,10 +110,11 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
             if (!voiceReceiver)
             {
                 voiceReceiver = Instantiate(voiceReceiverPrefab);
-                voiceReceiver.name = $"{voiceReceiverPrefab.name}-{owner.Value.id.value}";
+                voiceReceiver.name = $"{voiceReceiverPrefab.name}-{clientId}";
                 NetworkManager.main.Spawn(voiceReceiver.gameObject);
                 // ReSharper disable once Unity.InstantiateWithoutParent
                 voiceReceiver.transform.SetParent(transform);
+                voiceReceiver.transform.position = new Vector3(0, 1, 0);
                 if (voiceReceiver is NetworkIdentity identity)
                 {
                     identity.GiveOwnership(owner);
@@ -118,9 +126,7 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
                 gameObject.AddComponent<AudioListener>();
             }
 
-            string ownerName = "NULL";
-
-            voiceInterface.Init(owner.Value.id.value, ownerName);
+            voiceInterface.Init(clientId, ownerName);
         }
     }
 

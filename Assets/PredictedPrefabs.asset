@@ -12,34 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0fd6605d666f95f479712408e07522e5, type: 3}
   m_Name: PredictedPrefabs
   m_EditorClassIdentifier: 
-  _autoGenerate: 1
+  _autoGenerate: 0
   _folder: {fileID: 102900000, guid: 00000000000000001000000000000000, type: 3}
   _defaultPooling:
-    usePooling: 0
+    usePooling: 1
     initialSize: 5
   _prefabs: []
   _newPrefabs:
-  - prefab: {fileID: 2990978637306053845, guid: 14ef4fb9c3d76ce4686663df0c0f2555, type: 3}
-    pooling:
-      usePooling: 0
-      initialSize: 0
-  - prefab: {fileID: 8579794327781336704, guid: 214baaa516cac5d40b514d7aea4005b6, type: 3}
-    pooling:
-      usePooling: 0
-      initialSize: 0
-  - prefab: {fileID: 2990978637306053845, guid: 5fe83bbdbb5396d46a02d9ba2e4705e6, type: 3}
-    pooling:
-      usePooling: 0
-      initialSize: 0
-  - prefab: {fileID: 2990978637306053845, guid: 610a1af2ceed86e43bfa0c30ef05a2da, type: 3}
-    pooling:
-      usePooling: 0
-      initialSize: 0
   - prefab: {fileID: 642287924342879162, guid: 79d0ca8b77e301442afdb49f102e8aed, type: 3}
-    pooling:
-      usePooling: 0
-      initialSize: 0
-  - prefab: {fileID: 208167536026591109, guid: eb91489127ad82e4cbc003840e08c8f8, type: 3}
     pooling:
       usePooling: 0
       initialSize: 0
