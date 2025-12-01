@@ -82,7 +82,11 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
             if (owner.HasValue)
             {
                 clientId = owner.Value.id.value;
-                ownerName = LobbyHandlerUtil.GetLobbyUserByClientId(clientId).DisplayName;
+                var lobbyDate = LobbyHandlerUtil.GetLobbyUserByClientId(clientId);
+                if (lobbyDate != null)
+                {
+                    ownerName = lobbyDate.Username;
+                }
             }
 
             if (cameraTarget == null)

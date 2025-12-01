@@ -1,3 +1,4 @@
+using NyxMachina.Shared.EventFramework;
 using PurrLobby;
 using PurrNet;
 using System.Threading.Tasks;
@@ -5,28 +6,14 @@ using UnityEngine;
 
 namespace NyxMachina.Multiplayer
 {
-    public class LobbyNetworkHandler : NetworkBehaviour
+    public class LobbyNetworkHandler
     {
-        public static LobbyNetworkHandler Instance { get; private set; }
-
-        protected override void OnSpawned()
-        {
-            base.OnSpawned();
-            Instance = this;
-        }
-
-        protected override void OnDespawned()
-        {
-            base.OnDespawned();
-            if (Instance == this) Instance = null;
-        }
-
         /// <summary>
         /// Called by the Client to validate their presence with the Server.
         /// Returns a Task that completes when the Server responds.
         /// </summary>
         [ServerRpc(requireOwnership: false)]
-        public async Task<AsyncResult> ValidateHandshakeAsync_RPC(string steamId, RPCInfo info = default)
+        public static async Task<AsyncResult> ValidateHandshakeAsync_RPC(string steamId, ulong overrideClientId = 0, RPCInfo info = default)
         {
             // Server Validation: Is the server actually in a lobby?
             // We don't retry this; if the server isn't in a lobby, something is critically wrong.
@@ -68,13 +55,81 @@ namespace NyxMachina.Multiplayer
                 return AsyncResult.Fail("You are not a member of this Steam Lobby (Validation Timed Out).");
             }
 
-            // Success Logic: Map PurrNet PlayerID to Steam User Data
-            LobbyHandler.PlayerList[info.sender.id.value] = lobbyUser;
+            // Check ownership status from the PurrLobby data
+            // (Assuming the Lobby Owner is the Host)
+            bool isOwner = LobbyHandler.lobbyManager.CurrentLobby.IsOwner;
 
-            Debug.Log($"[Server] Handshake Approved for {lobbyUser.DisplayName} (PurrID: {info.sender.id}).");
+            ulong clientId = overrideClientId == 0 ? info.sender.id.value : overrideClientId;
 
-            // Return Success to the waiting Client
+            // Create the Concrete Class with Steamworks Integration
+            var steamUser = LobbyHandler.CreateSteamUser(clientId, steamId, isOwner);
+            if (steamUser != null)
+            {
+                // Add to the Dictionary
+                LobbyHandler.PlayerList[clientId] = steamUser;
+                
+                // Publish Event locally on Server so UI updates
+                EVENT.Publish(new OnPlayerJoinLobby(steamUser));
+            }
+
+            Debug.Log($"[Server] Handshake Approved for {steamUser?.Username} (PurrID: {clientId}).");
+
             return AsyncResult.Success();
+        }
+
+        [TargetRpc]
+        public static void NotifyKicked_RPC(PlayerID target, RPCInfo info = default)
+        {
+            Debug.LogWarning("[Lobby] You have been kicked from the lobby.");
+        
+            // Leave Steam Lobby
+            _ = LobbyHandler.LeaveLobbyAsync();
+        
+            // Show UI Feedback
+            // UIManager.ShowPopup("Kicked", "The host has removed you from the lobby.");
+            Debug.Log("The host has removed you from the lobby.");
+        }
+
+        [ObserversRpc]
+        public static void NotifyLobbyDataChanged_RPC(string key, string value)
+        {
+            // This is for instant UI updates, so we don't have to wait for the Steam Callback
+            Debug.Log($"[Lobby] Setting updated: {key} = {value}");
+            
+            // EVENT.Publish(new OnLobbySettingChanged(key, value));
+        }
+
+        [ServerRpc(requireOwnership: false)]
+        public static async Task<AsyncResult> UpdatePlayerData_RPC(string key, string value, RPCInfo info = default)
+        {
+            // Server updates its own list
+            if (LobbyHandler.PlayerList.TryGetValue(info.sender.id, out var user))
+            {
+                // Cast to concrete class to access internal dictionary
+                if (user is SteamLobbyUser steamUser)
+                {
+                    steamUser.UserDataDictionary[key] = value;
+                }
+            }
+
+            // Server tells all other clients to update
+            NotifyPlayerDataChanged_RPC(info.sender.id, key, value);
+            return AsyncResult.Success();
+        }
+
+        [ObserversRpc]
+        public static void NotifyPlayerDataChanged_RPC(ulong targetClientId, string key, string value)
+        {
+            if (LobbyHandler.PlayerList.TryGetValue(targetClientId, out var user))
+            {
+                if (user is SteamLobbyUser steamUser)
+                {
+                    steamUser.UserDataDictionary[key] = value;
+                    // Trigger an event so UI redraws
+                    // EVENT.Publish(new OnPlayerDataUpdated(targetClientId, key));
+                    Debug.Log($"Player '{targetClientId}' Data '{key}' to '{value}' Updated");
+                }
+            }
         }
     }
 }

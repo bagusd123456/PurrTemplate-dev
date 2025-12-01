@@ -1,6 +1,5 @@
 using NyxMachina.Multiplayer;
 using NyxMachina.Shared.EventFramework;
-using NyxMachina.Shared.EventFramework.Core.Payloads;
 using PurrLobby;
 using PurrNet;
 using PurrNet.Steam;
@@ -9,10 +8,22 @@ using QFSW.QC;
 using Steamworks;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using ConnectionState = PurrNet.Transports.ConnectionState;
+
+public interface UserLobbyData
+{
+    public ulong ClientId { get; }
+    public string Username { get; }
+    public Texture2D UserAvatar { get; }
+    public bool IsReady { get; }
+    public bool IsHost { get; }
+
+    public Dictionary<string, object> UserDataDictionary { get; }
+}
 
 public class LobbyHandler
 {
@@ -21,7 +32,7 @@ public class LobbyHandler
     public static ChatRoomHandler chatRoomHandler;
     public static Task steamCallbackTask;
 
-    public static Dictionary<ulong, LobbyUser> PlayerList = new();
+    public static Dictionary<ulong, UserLobbyData> PlayerList = new();
 
     public LobbyHandler(LobbyManager lobbyManager, NetworkManager networkManager)
     {
@@ -34,7 +45,7 @@ public class LobbyHandler
         // Remove old listeners to prevent duplicates if re-initialized
         networkManager.onPlayerJoined -= HandleOnPlayerJoin;
         networkManager.onPlayerLeft -= HandleOnPlayerLeft;
-        
+
         networkManager.onPlayerJoined += HandleOnPlayerJoin;
         networkManager.onPlayerLeft += HandleOnPlayerLeft;
     }
@@ -54,7 +65,7 @@ public class LobbyHandler
             }
             steamCallbackTask = RunSteamCallback();
             await lobbyManager.CurrentProvider.InitializeAsync();
-            
+
             chatRoomHandler = new ChatRoomHandler();
         }
         catch (Exception e)
@@ -100,7 +111,7 @@ public class LobbyHandler
 
             targetRoomProperties["isStarted"] = "false";
             createdLobby = await lobbyManager.CurrentProvider.CreateLobbyAsync(targetMaxPlayer, targetRoomProperties);
-            
+
             var startServerTask = await StartClientServerAsync(networkTransport);
             if (startServerTask.IsFail)
             {
@@ -131,9 +142,15 @@ public class LobbyHandler
             // Join Steam Lobby (Platform Layer)
             Debug.Log("[LobbyHandler] Joining Steam Lobby...");
             currentLobby = await lobbyManager.CurrentProvider.JoinLobbyAsync(roomId);
-            
-            if (!currentLobby.IsValid) 
+
+            if (!currentLobby.IsValid)
                 return AsyncResult<Lobby>.Fail("Steam Lobby is invalid.");
+
+            if (currentLobby.Properties.TryGetValue("isPrivate", out string value) && value == "true")
+            {
+                await LeaveLobbyAsync();
+                return AsyncResult<Lobby>.Fail("This lobby is private.");
+            }
 
             if (!currentLobby.Properties.TryGetValue("steamAccountId", out var ownerSteamAccountId))
             {
@@ -147,7 +164,7 @@ public class LobbyHandler
             Debug.Log("[LobbyHandler] Connecting to Host via Transport...");
             var networkTransport = networkManager.transport;
             var startClientTask = await StartClientAsync(networkTransport, ownerSteamAccountId);
-            
+
             if (startClientTask.IsFail)
             {
                 await LeaveLobbyAsync();
@@ -157,20 +174,13 @@ public class LobbyHandler
             // Handshake (Logic Layer via RPC)
             Debug.Log("[LobbyHandler] Connection established. Validating with Host...");
 
-            if (LobbyNetworkHandler.Instance == null)
-            {
-                await LeaveLobbyAsync();
-                return AsyncResult<Lobby>.Fail("Failed to join Lobby.\n" +
-                                               "LobbyNetworkController missing from scene.");
-            }
-
             string mySteamId = SteamUser.GetSteamID().ToString();
             AsyncResult result;
 
             try
             {
                 // Awaitable RPC: Pauses here until Server replies
-                result = await LobbyNetworkHandler.Instance.ValidateHandshakeAsync_RPC(mySteamId);
+                result = await LobbyNetworkHandler.ValidateHandshakeAsync_RPC(mySteamId);
             }
             catch (Exception e)
             {
@@ -208,7 +218,7 @@ public class LobbyHandler
     {
         var errorMessage = "";
         var currentLobby = lobbyManager.CurrentLobby;
-        
+
         try
         {
             // Stop Networking
@@ -227,7 +237,7 @@ public class LobbyHandler
                 await lobbyManager.CurrentProvider.LeaveLobbyAsync();
                 EVENT.Publish(new OnLeftLobby(currentLobby));
             }
-            
+
             PlayerList.Clear();
         }
         catch (Exception e)
@@ -247,7 +257,7 @@ public class LobbyHandler
     public static async Task<AsyncResult> SetIsReadyAsync(bool targetState)
     {
         var localUserId = await lobbyManager.CurrentProvider.GetLocalUserIdAsync();
-        if (string.IsNullOrWhiteSpace(localUserId)) 
+        if (string.IsNullOrWhiteSpace(localUserId))
             return AsyncResult.Fail("Local User ID is null.");
 
         return await SetIsReadyAsync(localUserId, targetState);
@@ -292,14 +302,139 @@ public class LobbyHandler
         try
         {
             await lobbyManager.CurrentProvider.SetLobbyStartedAsync();
-            lobbyManager.CurrentLobby.Properties["isStarted"] = "true";
-            await lobbyManager.CurrentProvider.SetLobbyDataAsync("isStarted", "true");
+            await UpdateLobbyDataAsync("isStarted", "true");
         }
         catch (Exception e)
         {
             return AsyncResult.Fail(e.Message);
         }
         return AsyncResult.Success();
+    }
+
+    public static async Task SetUserData(string key, string value)
+    {
+        var localId = networkManager.localPlayer.id;
+        string userUniqueId = "";
+
+        // Update locally immediately for responsiveness
+        if (PlayerList.TryGetValue(localId, out var user) && user is SteamLobbyUser steamUser)
+        {
+            steamUser.UserDataDictionary[key] = value;
+            userUniqueId = steamUser.SteamID.ToString();
+        }
+
+        // Send to network
+        await LobbyNetworkHandler.UpdatePlayerData_RPC(key, value);
+
+        if (lobbyManager.CurrentLobby.IsValid)
+        {
+            if (!string.IsNullOrWhiteSpace(userUniqueId))
+            {
+                Debug.LogError($"Failed to store UserData to lobbyData.\n" +
+                               $"'userUniqueId' is null.");
+                return;
+            }
+
+            if (!ulong.TryParse(lobbyManager.CurrentLobby.LobbyId, out var ulongLobbyId))
+            {
+                Debug.LogError($"Failed to store UserData to lobbyData.\n" +
+                               $"Unable to parse lobbyId.");
+                return;
+            }
+
+            CSteamID lobbyId = new CSteamID(ulongLobbyId);
+            SteamMatchmaking.SetLobbyMemberData(lobbyId, userUniqueId, value);
+        }
+        
+    }
+
+    #endregion
+
+    #region Admin (Host Only)
+
+    [Command]
+    public static async Task<AsyncResult> KickPlayerAsync(ulong targetClientId)
+    {
+        // Validation
+        if (!lobbyManager.CurrentLobby.IsOwner)
+            return AsyncResult.Fail("Only the Host can kick players.");
+
+        if (targetClientId == networkManager.localPlayer.id)
+            return AsyncResult.Fail("You cannot kick yourself.");
+
+        if (!PlayerList.TryGetValue(targetClientId, out var userData))
+            return AsyncResult.Fail("Player not found.");
+
+        try
+        {
+            Debug.Log($"[LobbyHandler] Kicking player {userData.Username}...");
+            PlayerID? targetPlayer = null;
+
+            foreach (var player in networkManager.players)
+            {
+                if (player.id.value != targetClientId) continue;
+                targetPlayer = player;
+                break;
+            }
+
+            if (!targetPlayer.HasValue)
+                return AsyncResult.Fail($"Player with id '{targetClientId}' not found.");
+
+            LobbyNetworkHandler.NotifyKicked_RPC(targetPlayer.Value);
+            return AsyncResult.Success();
+
+        }
+        catch (Exception e)
+        {
+            return AsyncResult.Fail($"Kick failed: {e.Message}");
+        }
+    }
+
+    [Command]
+    public static async Task<AsyncResult> SetLobbyPrivateStateAsync(bool isPrivate)
+    {
+        if (!lobbyManager.CurrentLobby.IsOwner)
+            return AsyncResult.Fail("Only the Host can lock the lobby.");
+
+        try
+        {
+            // Steamworks: Toggle Joinable
+            ulong lobbyId = ulong.Parse(lobbyManager.CurrentLobby.LobbyId);
+            bool success = SteamMatchmaking.SetLobbyJoinable(new CSteamID(lobbyId), !isPrivate);
+
+            // Also set a data property so we can check it easily later
+            await UpdateLobbyDataAsync("isPrivate", isPrivate.ToString().ToLower());
+
+            return success ? AsyncResult.Success() : AsyncResult.Fail("Steam API returned false.");
+        }
+        catch (Exception e)
+        {
+            return AsyncResult.Fail(e.Message);
+        }
+    }
+
+    [Command]
+    public static async Task<AsyncResult> UpdateLobbyDataAsync(string key, string value)
+    {
+        if (!lobbyManager.CurrentLobby.IsOwner)
+            return AsyncResult.Fail("Only the Host can update lobby settings.");
+
+        try
+        {
+            // Update Steam Lobby (The Source of Truth)
+            // This ensures late-joiners get the correct data
+            await lobbyManager.CurrentProvider.SetLobbyDataAsync(key, value);
+
+            // Notify Clients via RPC (Fast Sync)
+            // Steam callbacks can take 1-5 seconds. RPC is instant.
+            LobbyNetworkHandler.NotifyLobbyDataChanged_RPC(key, value);
+
+            return AsyncResult.Success();
+        }
+        catch (Exception e)
+        {
+            return AsyncResult.Fail(e.Message);
+        }
     }
 
     public static async Task<AsyncResult<List<Lobby>>> SearchLobbyAsync(int maxRoomsToFind = 10, Dictionary<string, string> filters = null)
@@ -339,8 +474,8 @@ public class LobbyHandler
         {
             // Check if the player leaving is NOT us (meaning we didn't initiate a quit)
             // AND the network state is disconnected (meaning the cable was pulled or host crashed)
-            if (player.IsLocal() && 
-                (networkManager.clientState == ConnectionState.Disconnected || 
+            if (player.IsLocal() &&
+                (networkManager.clientState == ConnectionState.Disconnected ||
                  networkManager.clientState == ConnectionState.Disconnecting))
             {
                 Debug.LogWarning("[LobbyHandler] Lost connection to server. Leaving Steam Lobby.");
@@ -349,25 +484,38 @@ public class LobbyHandler
         }
     }
 
-    private void HandleOnPlayerJoin(PlayerID player, bool isReconnect, bool asServer)
+    private async void HandleOnPlayerJoin(PlayerID player, bool isReconnect, bool asServer)
     {
         // Note: Logic validation is now done in LobbyNetworkController via RPC
         // This callback is mostly for logging or raw transport events.
-        if (isReconnect) 
+        if (isReconnect)
             return;
 
         Debug.Log($"[LobbyHandler] Player with id '{player.id}' connected via Transport.");
 
         if (asServer)
         {
-            LobbyUser lobbyUser = lobbyManager.CurrentLobby.Members.Find(x => x.Id == SteamUser.GetSteamID().ToString());
-            PlayerList[player.id.value] = lobbyUser;
+            string errorMessage = "";
+            Debug.Log("[LobbyHandler] Transport started. Validating Host with Server...");
+
+            // Call the Handshake RPC. 
+            // Since we are the Host, this executes immediately on our local server,
+            // creating the SteamLobbyUser and adding it to PlayerList.
+            var handshakeResult = await LobbyNetworkHandler.ValidateHandshakeAsync_RPC(SteamUser.GetSteamID().ToString(), player.id);
+
+            if (!handshakeResult.IsSuccess)
+            {
+                Debug.LogError($"[LobbyHandler] Host Registration Failed: {handshakeResult.Message}");
+                return;
+            }
+
+            Debug.Log("[LobbyHandler] Host registered successfully.");
         }
     }
 
     #endregion
 
-    #region TRANSPORT EXECUTION HANDLER
+    #region Transport Execution Handler
 
     private static async Task<AsyncResult> StartClientAsync(GenericTransport networkTransport, string targetAddress)
     {
@@ -427,7 +575,7 @@ public class LobbyHandler
             if (state == ConnectionState.Connected) tcs.TrySetResult(AsyncResult.Success());
             else if (state == ConnectionState.Disconnected) tcs.TrySetResult(AsyncResult.Fail("Server failed to start."));
         }
-        
+
         cts.Token.Register(() => tcs.TrySetResult(AsyncResult.Fail("Server start timed out.")));
 
         try
@@ -468,12 +616,64 @@ public class LobbyHandler
 
     private static async Task<AsyncResult> StopClientServerAsync(GenericTransport networkTransport)
     {
-        if (networkTransport is SteamTransport steamTransport) steamTransport.address = "";
-        
         await StopClientAsync(networkTransport); // Stop Client side first
         networkManager.StopServer(); // Stop Server side
-        
+
         return AsyncResult.Success();
+    }
+
+    #endregion
+
+    public static SteamLobbyUser CreateSteamUser(ulong clientId, string steamIdString, bool isOwner)
+    {
+        if (ulong.TryParse(steamIdString, out ulong steamIdLong))
+        {
+            CSteamID cSteamId = new CSteamID(steamIdLong);
+            var newUser = new SteamLobbyUser(clientId, cSteamId, isOwner);
+            return newUser;
+
+            //TODO handle LobbyData to userLobbyData
+            if (lobbyManager != null && lobbyManager.CurrentLobby.IsValid)
+            {
+                
+            }
+        }
+        Debug.LogError($"[LobbyHandler] Could not parse SteamID: {steamIdString}");
+        return null;
+    }
+
+    #region WIP Feature
+
+    [Command]
+    public static async Task<AsyncResult> PromoteToHostAsync(ulong targetClientId)
+    {
+        return AsyncResult.Fail("Feature still in development!");
+
+        if (!lobbyManager.CurrentLobby.IsOwner)
+            return AsyncResult.Fail("Only the Host can promote players.");
+
+        if (!PlayerList.TryGetValue(targetClientId, out var userData))
+            return AsyncResult.Fail("Player not found.");
+
+        if (userData is not SteamLobbyUser steamUser)
+            return AsyncResult.Fail("Invalid User Data.");
+
+        try
+        {
+            // Steamworks: Set new owner
+            // Note: This only changes who controls the Steam Lobby (Settings, Invites).
+            // It DOES NOT change who acts as the PurrNet Server. 
+            // True Host Migration is very complex; this is "Lobby Leadership Transfer".
+            ulong lobbyId = ulong.Parse(lobbyManager.CurrentLobby.LobbyId);
+            SteamMatchmaking.SetLobbyOwner(new CSteamID(lobbyId), steamUser.SteamID);
+
+            Debug.Log($"[LobbyHandler] Ownership transferred to {steamUser.Username}");
+            return AsyncResult.Success();
+        }
+        catch (Exception e)
+        {
+            return AsyncResult.Fail($"Promote failed: {e.Message}");
+        }
     }
 
     #endregion
@@ -481,13 +681,14 @@ public class LobbyHandler
 
 public static class LobbyHandlerUtil
 {
-    public static LobbyUser GetLobbyUserByClientId(ulong clientId)
+    public static UserLobbyData GetLobbyUserByClientId(ulong clientId)
     {
         if (!LobbyHandler.PlayerList.TryGetValue(clientId, out var result))
         {
             Debug.LogWarning($"Cannot found LobbyUserData with clientId '{clientId}'.");
-            return default;
+            return null;
         }
+
         return result;
     }
 }
@@ -498,7 +699,7 @@ public static class PlayerIDExtensions
     {
         // Ensure NetworkManager exists to avoid errors during shutdown
         if (NetworkManager.main == null) return false;
-        
+
         return player == NetworkManager.main.localPlayer;
     }
 }
