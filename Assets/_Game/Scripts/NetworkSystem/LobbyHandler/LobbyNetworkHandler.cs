@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NyxMachina.Shared.EventFramework;
 using PurrLobby;
 using PurrNet;
@@ -72,6 +73,21 @@ namespace NyxMachina.Multiplayer
                 EVENT.Publish(new OnPlayerJoinLobby(steamUser));
             }
 
+            List<ulong> existingIds = new List<ulong>();
+            List<string> existingSteamIds = new List<string>();
+
+            foreach(var kvp in LobbyHandler.PlayerList)
+            {
+                if(kvp.Key == clientId) continue; // Don't send self
+                if(kvp.Value is SteamLobbyUser u) 
+                {
+                    existingIds.Add(u.ClientId);
+                    existingSteamIds.Add(u.SteamID.ToString());
+                }
+            }
+            if(existingIds.Count > 0)
+                NotifyLobbyDataChanged_RPC("PlayerList", "");
+
             Debug.Log($"[Server] Handshake Approved for {steamUser?.Username} (PurrID: {clientId}).");
 
             return AsyncResult.Success();
@@ -129,6 +145,56 @@ namespace NyxMachina.Multiplayer
                     // EVENT.Publish(new OnPlayerDataUpdated(targetClientId, key));
                     Debug.Log($"Player '{targetClientId}' Data '{key}' to '{value}' Updated");
                 }
+            }
+        }
+
+        [ServerRpc(requireOwnership: false)]
+        public static async Task SyncPlayerProperty_RPC(string key, string value, RPCInfo info = default)
+        {
+            // Server updates its own list
+            UpdateLocalList(info.sender.id, key, value);
+
+            // Server forwards to all other clients
+            SyncPlayerProperty_ObserverRPC(info.sender.id, key, value);
+        
+            await Task.CompletedTask;
+        }
+
+        [ObserversRpc]
+        public static void SyncPlayerProperty_ObserverRPC(ulong targetClientId, string key, string value)
+        {
+            // Avoid double-updating the person who sent it (they did optimistic update)
+            if (NetworkManager.main.localPlayer.id == targetClientId) return;
+
+            UpdateLocalList(targetClientId, key, value);
+        }
+
+        private static void UpdateLocalList(ulong clientId, string key, string value)
+        {
+            if (LobbyHandler.PlayerList.TryGetValue(clientId, out var user))
+            {
+                if (user is SteamLobbyUser steamUser)
+                {
+                    // Update the Dictionary
+                    steamUser.UserDataDictionary[key] = value;
+
+                    // Handle Property Mapping (Keeping the Class Properties in sync with Dictionary)
+                    switch (key)
+                    {
+                        case "IsReady":
+                            steamUser.IsReady = bool.Parse(value);
+                            break;
+                        // case "IsHost": ...
+                    }
+
+                    Debug.Log($"[Lobby] Synced {user.Username}: {key} = {value}");
+                    
+                    // EVENT.Publish(new OnLobbyDataUpdated(clientId)); 
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[Lobby] Received update for unknown client {clientId}");
             }
         }
     }

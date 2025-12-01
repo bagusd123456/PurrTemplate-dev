@@ -390,22 +390,33 @@ public class LobbyHandler
         }
     }
 
-    [Command]
-    public static async Task<AsyncResult> SetLobbyPrivateStateAsync(bool isPrivate)
+    public static async Task<AsyncResult> SetLobbyLockedStateAsync(bool isLocked)
     {
         if (!lobbyManager.CurrentLobby.IsOwner)
             return AsyncResult.Fail("Only the Host can lock the lobby.");
 
+        // If this is true, lobby IsValid will return false
+
+        // Steamworks: false if player can join; otherwise true.
+        ulong lobbyId = ulong.Parse(lobbyManager.CurrentLobby.LobbyId);
+        bool success = SteamMatchmaking.SetLobbyJoinable(new CSteamID(lobbyId), isLocked);
+
+        return success ? AsyncResult.Success() : AsyncResult.Fail("Failed to lock Lobby.\n" +
+                                                                  "Steam API return false");
+    }
+
+    [Command]
+    public static async Task<AsyncResult> SetLobbyPrivateStateAsync(bool isPrivate, string password)
+    {
+        if (!lobbyManager.CurrentLobby.IsOwner)
+            return AsyncResult.Fail("Only the Host can private the lobby.");
+
         try
         {
-            // Steamworks: Toggle Joinable
-            ulong lobbyId = ulong.Parse(lobbyManager.CurrentLobby.LobbyId);
-            bool success = SteamMatchmaking.SetLobbyJoinable(new CSteamID(lobbyId), !isPrivate);
+            
 
             // Also set a data property so we can check it easily later
-            await UpdateLobbyDataAsync("isPrivate", isPrivate.ToString().ToLower());
-
-            return success ? AsyncResult.Success() : AsyncResult.Fail("Steam API returned false.");
+            return await UpdateLobbyDataAsync("isPrivate", isPrivate.ToString().ToLower());
         }
         catch (Exception e)
         {
@@ -435,6 +446,32 @@ public class LobbyHandler
         {
             return AsyncResult.Fail(e.Message);
         }
+    }
+
+    /// <summary>
+    /// The specific method to update ANY data for a player (Ready state, Character, Team, etc.)
+    /// </summary>
+    public static async Task SetPlayerPropertyAsync(string key, string value)
+    {
+        var localId = networkManager.localPlayer.id;
+
+        // Update locally
+        if (PlayerList.TryGetValue(localId, out var user) && user is SteamLobbyUser steamUser)
+        {
+            steamUser.UserDataDictionary[key] = value;
+        }
+
+        // BACKUP: Save to Steam Lobby Data (For late joiners / crash recovery)
+        if (lobbyManager.CurrentLobby.IsValid)
+        {
+            if (ulong.TryParse(lobbyManager.CurrentLobby.LobbyId, out ulong lobbyId))
+            {
+                SteamMatchmaking.SetLobbyMemberData(new CSteamID(lobbyId), key, value);
+            }
+        }
+
+        // Send RPC to update everyone else immediately
+        await LobbyNetworkHandler.SyncPlayerProperty_RPC(key, value);
     }
 
     public static async Task<AsyncResult<List<Lobby>>> SearchLobbyAsync(int maxRoomsToFind = 10, Dictionary<string, string> filters = null)
