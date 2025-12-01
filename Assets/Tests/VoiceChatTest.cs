@@ -1,7 +1,8 @@
+using NUnit.Framework;
+using NyxMachina.Multiplayer;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
-using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
