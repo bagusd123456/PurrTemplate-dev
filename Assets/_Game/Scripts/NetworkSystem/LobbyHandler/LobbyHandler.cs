@@ -8,22 +8,11 @@ using QFSW.QC;
 using Steamworks;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using UnityEngine;
 using ConnectionState = PurrNet.Transports.ConnectionState;
-
-public interface UserLobbyData
-{
-    public ulong ClientId { get; }
-    public string Username { get; }
-    public Texture2D UserAvatar { get; }
-    public bool IsReady { get; }
-    public bool IsHost { get; }
-
-    public Dictionary<string, object> UserDataDictionary { get; }
-}
 
 public class LobbyHandler
 {
@@ -32,7 +21,9 @@ public class LobbyHandler
     public static ChatRoomHandler chatRoomHandler;
     public static Task steamCallbackTask;
 
-    public static Dictionary<ulong, UserLobbyData> PlayerList = new();
+    public static PlayerID currentPlayerId;
+
+    public static Dictionary<ulong, ILobbyDataModel> PlayerList = new();
 
     public LobbyHandler(LobbyManager lobbyManager, NetworkManager networkManager)
     {
@@ -53,6 +44,9 @@ public class LobbyHandler
     public async Task<AsyncResult> Init()
     {
         var errorMessage = "";
+
+        Application.quitting -= AppQuitting;
+        Application.quitting += AppQuitting;
 
         try
         {
@@ -78,6 +72,12 @@ public class LobbyHandler
         return AsyncResult.Success();
     }
 
+    private void AppQuitting()
+    { 
+        Debug.Log("App quitting.");
+        _ = LeaveLobbyAsync();
+    }
+
     private async Task RunSteamCallback()
     {
         var runCallbacks = true;
@@ -87,6 +87,19 @@ public class LobbyHandler
             await Task.Delay(16);
         }
     }
+
+    #region Data Access Wrappers
+
+    public static async Task SetLobbyData(string key, string value) => 
+        await LobbyDataHandler.SetLobbyDataAsync(key, value);
+
+    public static async Task SetLocalUserData(string key, string value) => 
+        await LobbyDataHandler.SetPlayerData(key, value);
+
+    public static string GetLobbyData(string key) => 
+        LobbyDataHandler.GetLobbyData(key);
+    
+    #endregion
 
     #region Lobby Logic
 
@@ -109,7 +122,6 @@ public class LobbyHandler
                 steamTransport.address = steamAccountId;
             }
 
-            targetRoomProperties["isStarted"] = "false";
             createdLobby = await lobbyManager.CurrentProvider.CreateLobbyAsync(targetMaxPlayer, targetRoomProperties);
 
             var startServerTask = await StartClientServerAsync(networkTransport);
@@ -238,6 +250,12 @@ public class LobbyHandler
                 EVENT.Publish(new OnLeftLobby(currentLobby));
             }
 
+            if (ulong.TryParse(currentLobby.LobbyId, out var convertedLobbyId))
+            {
+                CSteamID lobbyIdStruct = new CSteamID(convertedLobbyId);
+                SteamMatchmaking.LeaveLobby(lobbyIdStruct);
+            }
+
             PlayerList.Clear();
         }
         catch (Exception e)
@@ -260,7 +278,9 @@ public class LobbyHandler
         if (string.IsNullOrWhiteSpace(localUserId))
             return AsyncResult.Fail("Local User ID is null.");
 
-        return await SetIsReadyAsync(localUserId, targetState);
+        await SetIsReadyAsync(localUserId, targetState);
+
+        return await LobbyDataHandler.SetPlayerData("IsReady", targetState);
     }
 
     public static async Task<AsyncResult> SetIsReadyAsync(string targetUserId, bool targetState)
@@ -296,56 +316,67 @@ public class LobbyHandler
     [Command]
     public static async Task<AsyncResult> SetLobbyStartedAsync()
     {
-        if (!lobbyManager.CurrentLobby.IsValid)
-            return AsyncResult.Fail("No lobby joined.");
-
         try
         {
             await lobbyManager.CurrentProvider.SetLobbyStartedAsync();
-            await UpdateLobbyDataAsync("isStarted", "true");
         }
         catch (Exception e)
         {
-            return AsyncResult.Fail(e.Message);
+            return AsyncResult.Fail("Failed to start Lobby.\n" +
+                                    $"Unknown error: {e}");
         }
+        
         return AsyncResult.Success();
     }
 
-    public static async Task SetUserData(string key, string value)
+    public static async Task SavePlayerJsonToLobby(ulong clientId, string steamId)
     {
-        var localId = networkManager.localPlayer.id;
-        string userUniqueId = "";
+        // Gather all current data for this player from the Server's RAM
+        if (!PlayerList.TryGetValue(clientId, out var user) || user is not SteamLobbyUser steamUser)
+            return;
 
-        // Update locally immediately for responsiveness
-        if (PlayerList.TryGetValue(localId, out var user) && user is SteamLobbyUser steamUser)
+        var steamIdStruct = new CSteamID(clientId);
+        // Build the data
+        SteamLobbyUser model = new SteamLobbyUser(clientId, steamIdStruct, user.IsHost);
+
+        // Copy everything else to Extra
+        foreach((string key, var value) in steamUser.Extra)
         {
-            steamUser.UserDataDictionary[key] = value;
-            userUniqueId = steamUser.SteamID.ToString();
+            if (key != "IsReady" && key != "AvatarId")
+                model.Extra[key] = value.ToString();
         }
 
-        // Send to network
-        await LobbyNetworkHandler.UpdatePlayerData_RPC(key, value);
+        // Serialize to JSON
+        string json = JsonConvert.SerializeObject(model);
+        string lobbyKey = $"User_{steamId}";
 
-        if (lobbyManager.CurrentLobby.IsValid)
-        {
-            if (!string.IsNullOrWhiteSpace(userUniqueId))
-            {
-                Debug.LogError($"Failed to store UserData to lobbyData.\n" +
-                               $"'userUniqueId' is null.");
-                return;
-            }
-
-            if (!ulong.TryParse(lobbyManager.CurrentLobby.LobbyId, out var ulongLobbyId))
-            {
-                Debug.LogError($"Failed to store UserData to lobbyData.\n" +
-                               $"Unable to parse lobbyId.");
-                return;
-            }
-
-            CSteamID lobbyId = new CSteamID(ulongLobbyId);
-            SteamMatchmaking.SetLobbyMemberData(lobbyId, userUniqueId, value);
-        }
+        // Write to Steam Global Lobby Data
+        await lobbyManager.CurrentProvider.SetLobbyDataAsync(lobbyKey, json);
         
+        Debug.Log($"[Host] Saved JSON for {steamUser.Username}: {json}");
+    }
+
+    private void HandleRoomUpdated(Lobby currentLobby)
+    {
+        // Refresh data when Steam says something changed
+        foreach ((ulong key, var value) in PlayerList)
+        {
+            if (value is SteamLobbyUser steamUser)
+            {
+                // Deserialize DTO
+                var serializedData = LobbyDataHandler.GetPlayerDataBySteamId(steamUser.SteamID.ToString());
+                if (serializedData == null) continue;
+
+                // Apply JSON data to local object
+                if (serializedData.IsReady != steamUser.IsReady) 
+                    steamUser.UpdateInternalData("IsReady", serializedData.IsReady.ToString());
+
+                foreach (var extra in serializedData.Extra)
+                {
+                    steamUser.UpdateInternalData(extra.Key, extra.Value.ToString());
+                }
+            }
+        }
     }
 
     #endregion
@@ -413,65 +444,13 @@ public class LobbyHandler
 
         try
         {
-            
-
             // Also set a data property so we can check it easily later
-            return await UpdateLobbyDataAsync("isPrivate", isPrivate.ToString().ToLower());
+            return await LobbyDataHandler.SetLobbyDataAsync("isPrivate", isPrivate.ToString().ToLower());
         }
         catch (Exception e)
         {
             return AsyncResult.Fail(e.Message);
         }
-    }
-
-    [Command]
-    public static async Task<AsyncResult> UpdateLobbyDataAsync(string key, string value)
-    {
-        if (!lobbyManager.CurrentLobby.IsOwner)
-            return AsyncResult.Fail("Only the Host can update lobby settings.");
-
-        try
-        {
-            // Update Steam Lobby (The Source of Truth)
-            // This ensures late-joiners get the correct data
-            await lobbyManager.CurrentProvider.SetLobbyDataAsync(key, value);
-
-            // Notify Clients via RPC (Fast Sync)
-            // Steam callbacks can take 1-5 seconds. RPC is instant.
-            LobbyNetworkHandler.NotifyLobbyDataChanged_RPC(key, value);
-
-            return AsyncResult.Success();
-        }
-        catch (Exception e)
-        {
-            return AsyncResult.Fail(e.Message);
-        }
-    }
-
-    /// <summary>
-    /// The specific method to update ANY data for a player (Ready state, Character, Team, etc.)
-    /// </summary>
-    public static async Task SetPlayerPropertyAsync(string key, string value)
-    {
-        var localId = networkManager.localPlayer.id;
-
-        // Update locally
-        if (PlayerList.TryGetValue(localId, out var user) && user is SteamLobbyUser steamUser)
-        {
-            steamUser.UserDataDictionary[key] = value;
-        }
-
-        // BACKUP: Save to Steam Lobby Data (For late joiners / crash recovery)
-        if (lobbyManager.CurrentLobby.IsValid)
-        {
-            if (ulong.TryParse(lobbyManager.CurrentLobby.LobbyId, out ulong lobbyId))
-            {
-                SteamMatchmaking.SetLobbyMemberData(new CSteamID(lobbyId), key, value);
-            }
-        }
-
-        // Send RPC to update everyone else immediately
-        await LobbyNetworkHandler.SyncPlayerProperty_RPC(key, value);
     }
 
     public static async Task<AsyncResult<List<Lobby>>> SearchLobbyAsync(int maxRoomsToFind = 10, Dictionary<string, string> filters = null)
@@ -491,11 +470,6 @@ public class LobbyHandler
     #endregion
 
     #region Network Events & Sync
-
-    private void HandleRoomUpdated(Lobby currentLobby)
-    {
-        // Handle visual updates or UI refreshes here
-    }
 
     private async void HandleOnPlayerLeft(PlayerID player, bool asServer)
     {
@@ -538,13 +512,18 @@ public class LobbyHandler
             // Call the Handshake RPC. 
             // Since we are the Host, this executes immediately on our local server,
             // creating the SteamLobbyUser and adding it to PlayerList.
-            var handshakeResult = await LobbyNetworkHandler.ValidateHandshakeAsync_RPC(SteamUser.GetSteamID().ToString(), player.id);
+            string currentSteamId = LobbyHandlerUtil.GetCurrentSteamId().ToString();
+            // Cache PlayerID
+            currentPlayerId = player;
+            var handshakeResult = await LobbyNetworkHandler.ValidateHandshakeAsync_RPC(currentSteamId, currentPlayerId.id.value);
 
             if (!handshakeResult.IsSuccess)
             {
                 Debug.LogError($"[LobbyHandler] Host Registration Failed: {handshakeResult.Message}");
                 return;
             }
+
+            //await LobbyDataHandler.SetLocalUserProperty("IsReady", false);
 
             Debug.Log("[LobbyHandler] Host registered successfully.");
         }
@@ -661,21 +640,32 @@ public class LobbyHandler
 
     #endregion
 
-    public static SteamLobbyUser CreateSteamUser(ulong clientId, string steamIdString, bool isOwner)
+    public static SteamLobbyUser CreateSteamUser(ulong clientId, string steamIdString)
     {
         if (ulong.TryParse(steamIdString, out ulong steamIdLong))
         {
-            CSteamID cSteamId = new CSteamID(steamIdLong);
-            var newUser = new SteamLobbyUser(clientId, cSteamId, isOwner);
-            return newUser;
+            var hostSteamId = LobbyHandler.lobbyManager.CurrentLobby.Properties.GetValueOrDefault("steamAccountId");
+            bool isHost = hostSteamId == steamIdString;
 
-            //TODO handle LobbyData to userLobbyData
-            if (lobbyManager != null && lobbyManager.CurrentLobby.IsValid)
+            CSteamID cSteamId = new CSteamID(steamIdLong);
+            var newUser = new SteamLobbyUser(clientId, cSteamId, isHost);
+
+            var savedData = LobbyDataHandler.GetPlayerDataBySteamId(steamIdString);
+            if (savedData != null)
             {
+                Debug.Log($"[LobbyHandler] Recovered data for {newUser.Username}");
                 
+                newUser.IsReady = savedData.IsReady;
+                newUser.UpdateInternalData("IsReady", savedData.IsReady.ToString());
+
+                foreach (var kvp in savedData.Extra)
+                {
+                    newUser.UpdateInternalData(kvp.Key, kvp.Value.ToString());
+                }
             }
+
+            return newUser;
         }
-        Debug.LogError($"[LobbyHandler] Could not parse SteamID: {steamIdString}");
         return null;
     }
 
@@ -718,7 +708,7 @@ public class LobbyHandler
 
 public static class LobbyHandlerUtil
 {
-    public static UserLobbyData GetLobbyUserByClientId(ulong clientId)
+    public static ILobbyDataModel GetPlayerDataByClientId(ulong clientId)
     {
         if (!LobbyHandler.PlayerList.TryGetValue(clientId, out var result))
         {
@@ -727,6 +717,37 @@ public static class LobbyHandlerUtil
         }
 
         return result;
+    }
+
+    public static ILobbyDataModel GetPlayerDataBySteamId(CSteamID steamId)
+    {
+        // Construct the key we expect to find in Lobby Properties
+        string key = $"User_{steamId}";
+
+        var currentLobby = LobbyHandler.lobbyManager.CurrentLobby;
+
+        // Check global lobby data
+        if (currentLobby.IsValid && currentLobby.Properties.TryGetValue(key, out string json))
+        {
+            try
+            {
+                SteamLobbyUser convertedData = JsonConvert.DeserializeObject<SteamLobbyUser>(json);
+
+                return convertedData;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[LobbyData] Failed to parse JSON for {key}.\n" +
+                                 $"Unkown Error: {e}");
+            }
+        }
+        return null; // Return null
+    }
+
+    public static CSteamID GetCurrentSteamId()
+    {
+        CSteamID steamId = SteamUser.GetSteamID();
+        return steamId;
     }
 }
 
@@ -738,5 +759,32 @@ public static class PlayerIDExtensions
         if (NetworkManager.main == null) return false;
 
         return player == NetworkManager.main.localPlayer;
+    }
+
+    public static PlayerID GetCurrentPlayerID()
+    {
+        var cachedPlayerId = LobbyHandler.currentPlayerId;
+        var networkManagerPlayerId = NetworkManager.main.localPlayer;
+
+        if (cachedPlayerId.Equals(default))
+        {
+            Debug.LogWarning($"CurrentPlayerId is not cached yet, returning the id from NetworkManager.");
+            return networkManagerPlayerId;
+        }
+
+        if (networkManagerPlayerId.Equals(default))
+        {
+            Debug.LogWarning($"PlayerID in NetworkManager is not initialized yet, returning the id from cache.");
+            return cachedPlayerId;
+        }
+
+        if (cachedPlayerId != networkManagerPlayerId)
+        {
+            Debug.LogWarning($"Conflicting Player ID Detected!\n" +
+                             $"Returning cachedPlayerID");
+            return cachedPlayerId;
+        }
+
+        return networkManagerPlayerId;
     }
 }

@@ -52,7 +52,7 @@ MonoBehaviour:
   _startServerFlags: 0
   _startClientFlags: 0
   _cookieScope: 1
-  _dontDestroyOnLoad: 1
+  _dontDestroyOnLoad: 0
   _transport: {fileID: 4568614055171041761}
   _networkPrefabs: {fileID: 11400000, guid: 4d50d267c9f564f4abc1e5dd9c63cc15, type: 2}
   _networkAssets: {fileID: 11400000, guid: 9db4209b0a56c9e4eb7f4fbf3173eb84, type: 2}
@@ -60,7 +60,7 @@ MonoBehaviour:
   _visibilityRules: {fileID: 11400000, guid: 8f014a5bd8dc68646a2a3c0b18c5bbd8, type: 2}
   _authenticator: {fileID: 0}
   _tickRate: 25
-  _patchLingeringProcessBug: 0
+  _patchLingeringProcessBug: 1
 --- !u!114 &5918337068757129126
 MonoBehaviour:
   m_ObjectHideFlags: 0

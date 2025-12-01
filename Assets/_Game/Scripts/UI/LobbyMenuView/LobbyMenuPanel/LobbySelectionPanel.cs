@@ -102,7 +102,7 @@ public class LobbySelectionPanel : View
     private async void HandleJoinButtonClicked(Lobby targetLobby)
     {
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
-        loadingPanel.Set("Joining Lobby...");
+        loadingPanel?.Set("Joining Lobby...");
         var createLobbyTask = await LobbyHandler.JoinLobbyByIdAsync(targetLobby.LobbyId);
         if (createLobbyTask.IsSuccess)
         {

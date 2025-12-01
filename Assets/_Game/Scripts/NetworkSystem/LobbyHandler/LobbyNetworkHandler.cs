@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NyxMachina.Shared.EventFramework;
 using PurrLobby;
 using PurrNet;
@@ -56,38 +57,49 @@ namespace NyxMachina.Multiplayer
                 return AsyncResult.Fail("You are not a member of this Steam Lobby (Validation Timed Out).");
             }
 
-            // Check ownership status from the PurrLobby data
-            // (Assuming the Lobby Owner is the Host)
-            bool isOwner = LobbyHandler.lobbyManager.CurrentLobby.IsOwner;
-
             ulong clientId = overrideClientId == 0 ? info.sender.id.value : overrideClientId;
 
             // Create the Concrete Class with Steamworks Integration
-            var steamUser = LobbyHandler.CreateSteamUser(clientId, steamId, isOwner);
+            var steamUser = LobbyHandler.CreateSteamUser(clientId, steamId);
             if (steamUser != null)
             {
                 // Add to the Dictionary
                 LobbyHandler.PlayerList[clientId] = steamUser;
+                var setPlayerTask = await LobbyDataHandler.SetPlayerData("IsReady", false);
+
+                if (!setPlayerTask.IsSuccess)
+                {
+                    Debug.LogWarning($"Failed while trying to upload data.\n" +
+                                     $"Unknown Error: {setPlayerTask.Message}");
+                }
                 
                 // Publish Event locally on Server so UI updates
                 EVENT.Publish(new OnPlayerJoinLobby(steamUser));
             }
 
-            List<ulong> existingIds = new List<ulong>();
+            List<ulong> existingClientIds = new List<ulong>();
             List<string> existingSteamIds = new List<string>();
 
-            foreach(var kvp in LobbyHandler.PlayerList)
+            foreach((ulong keyClientId, var data) in LobbyHandler.PlayerList)
             {
-                if(kvp.Key == clientId) continue; // Don't send self
-                if(kvp.Value is SteamLobbyUser u) 
+                if(keyClientId == clientId) continue; // Don't send the new player to themselves yet
+                if(data is SteamLobbyUser u) 
                 {
-                    existingIds.Add(u.ClientId);
+                    existingClientIds.Add(u.ClientId);
                     existingSteamIds.Add(u.SteamID.ToString());
                 }
             }
-            if(existingIds.Count > 0)
-                NotifyLobbyDataChanged_RPC("PlayerList", "");
 
+            foreach (var playerId in NetworkManager.main.players)
+            {
+                if (existingClientIds.Exists(x => x == playerId.id.value))
+                {
+                    SyncExistingPlayers_RPC(playerId, existingClientIds.ToArray(), existingSteamIds.ToArray());
+                }
+            }
+
+            // For client, it should be safe getting playerID from NetworkManager
+            LobbyHandler.currentPlayerId = NetworkManager.main.localPlayer;
             Debug.Log($"[Server] Handshake Approved for {steamUser?.Username} (PurrID: {clientId}).");
 
             return AsyncResult.Success();
@@ -109,55 +121,21 @@ namespace NyxMachina.Multiplayer
         [ObserversRpc]
         public static void NotifyLobbyDataChanged_RPC(string key, string value)
         {
-            // This is for instant UI updates, so we don't have to wait for the Steam Callback
-            Debug.Log($"[Lobby] Setting updated: {key} = {value}");
-            
-            // EVENT.Publish(new OnLobbySettingChanged(key, value));
-        }
-
-        [ServerRpc(requireOwnership: false)]
-        public static async Task<AsyncResult> UpdatePlayerData_RPC(string key, string value, RPCInfo info = default)
-        {
-            // Server updates its own list
-            if (LobbyHandler.PlayerList.TryGetValue(info.sender.id, out var user))
+            // Update PurrLobby wrapper locally so GetLobbyData works instantly for clients
+            if (LobbyHandler.lobbyManager.CurrentLobby.IsValid)
             {
-                // Cast to concrete class to access internal dictionary
-                if (user is SteamLobbyUser steamUser)
-                {
-                    steamUser.UserDataDictionary[key] = value;
-                }
+                LobbyHandler.lobbyManager.CurrentLobby.Properties[key] = value;
             }
-
-            // Server tells all other clients to update
-            NotifyPlayerDataChanged_RPC(info.sender.id, key, value);
-            return AsyncResult.Success();
+            Debug.Log($"[Lobby] Global Update: {key} = {value}");
         }
 
         [ObserversRpc]
         public static void NotifyPlayerDataChanged_RPC(ulong targetClientId, string key, string value)
         {
-            if (LobbyHandler.PlayerList.TryGetValue(targetClientId, out var user))
-            {
-                if (user is SteamLobbyUser steamUser)
-                {
-                    steamUser.UserDataDictionary[key] = value;
-                    // Trigger an event so UI redraws
-                    // EVENT.Publish(new OnPlayerDataUpdated(targetClientId, key));
-                    Debug.Log($"Player '{targetClientId}' Data '{key}' to '{value}' Updated");
-                }
-            }
-        }
+            // Skip self (Optimistic update already happened)
+            if (NetworkManager.main.localPlayer.id == targetClientId) return;
 
-        [ServerRpc(requireOwnership: false)]
-        public static async Task SyncPlayerProperty_RPC(string key, string value, RPCInfo info = default)
-        {
-            // Server updates its own list
-            UpdateLocalList(info.sender.id, key, value);
-
-            // Server forwards to all other clients
-            SyncPlayerProperty_ObserverRPC(info.sender.id, key, value);
-        
-            await Task.CompletedTask;
+            SyncLocalPlayerList(targetClientId, key, value);
         }
 
         [ObserversRpc]
@@ -176,7 +154,7 @@ namespace NyxMachina.Multiplayer
                 if (user is SteamLobbyUser steamUser)
                 {
                     // Update the Dictionary
-                    steamUser.UserDataDictionary[key] = value;
+                    steamUser.Extra[key] = value;
 
                     // Handle Property Mapping (Keeping the Class Properties in sync with Dictionary)
                     switch (key)
@@ -196,6 +174,51 @@ namespace NyxMachina.Multiplayer
             {
                 Debug.LogWarning($"[Lobby] Received update for unknown client {clientId}");
             }
+        }
+
+        /// <summary>
+        /// Client asks Host: "Please save my data to the Steam Lobby so late joiners can see it."
+        /// </summary>
+        [ServerRpc(requireOwnership: false)]
+        public static async Task RequestPlayerDataUpdate_RPC(string key, string value, RPCInfo info = default)
+        {
+            ulong senderId = info.sender.id;
+
+            // Update Server RAM
+            SyncLocalPlayerList(senderId, key, value);
+
+            // Broadcast to others
+            NotifyPlayerDataChanged_RPC(senderId, key, value);
+
+            // Persistence (Host Only)
+            if (LobbyHandler.lobbyManager.CurrentLobby.IsOwner)
+            {
+                if (LobbyHandler.PlayerList.TryGetValue(senderId, out var user) && user is SteamLobbyUser steamUser)
+                {
+                    await LobbyDataHandler.SavePlayerJsonToLobby(senderId, steamUser.SteamID.ToString());
+                }
+            }
+        }
+
+        private static void SyncLocalPlayerList(ulong clientId, string key, string value)
+        {
+            if (LobbyHandler.PlayerList.TryGetValue(clientId, out var user) && user is SteamLobbyUser steamUser)
+            {
+                steamUser.UpdateInternalData(key, value);
+                Debug.Log($"[Lobby] User {steamUser.Username} updated {key} -> {value}");
+            }
+        }
+
+        [TargetRpc]
+        public static void SyncExistingPlayers_RPC(PlayerID target, ulong[] clientIds, string[] steamIds, RPCInfo info = default)
+        {
+            for(int i=0; i<clientIds.Length; i++)
+            {
+                // Create user locally
+                var user = LobbyHandler.CreateSteamUser(clientIds[i], steamIds[i]);
+                if(user != null) LobbyHandler.PlayerList[clientIds[i]] = user;
+            }
+            // EVENT.Publish(new OnLobbyRefreshed());
         }
     }
 }

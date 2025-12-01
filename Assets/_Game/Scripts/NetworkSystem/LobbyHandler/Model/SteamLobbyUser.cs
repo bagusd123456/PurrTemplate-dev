@@ -1,18 +1,35 @@
+using System;
 using Steamworks;
 using UnityEngine;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
-public class SteamLobbyUser : UserLobbyData
+[Serializable]
+[JsonObject(MemberSerialization.OptIn)]
+public class SteamLobbyUser : ILobbyDataModel
 {
+    [JsonProperty("ClientId")]
     public ulong ClientId { get; internal set; }
-
+    [JsonProperty("UniqueUserId")]
+    public string UniqueUserId { get; internal set; }
+    [JsonProperty("Username")]
     public string Username { get; internal set; }
     public Texture2D UserAvatar { get; internal set; }
+    [JsonProperty("IsReady")]
     public bool IsReady { get; internal set; }
+    [JsonProperty("IsHost")]
     public bool IsHost { get; internal set; }
-    public Dictionary<string, object> UserDataDictionary { get; internal set; }
+    
+    internal Dictionary<string, object> _internalData = new();
+    [JsonProperty("Extra")]
+    public Dictionary<string, object> Extra => _internalData;
 
     public CSteamID SteamID { get; private set; }
+
+    public SteamLobbyUser()
+    {
+
+    }
 
     public SteamLobbyUser(ulong purrNetClientId, CSteamID steamId, bool isHost)
     {
@@ -20,7 +37,6 @@ public class SteamLobbyUser : UserLobbyData
         SteamID = steamId;
         IsHost = isHost;
         IsReady = false;
-        UserDataDictionary = new Dictionary<string, object>();
 
         // Get Username
         Username = SteamFriends.GetFriendPersonaName(steamId);
@@ -79,5 +95,24 @@ public class SteamLobbyUser : UserLobbyData
             // Copy temp to bottom
             System.Array.Copy(tempRow, 0, buffer, bottomRowIndex, rowSpan);
         }
+    }
+
+    /// <summary>
+    /// Updates the dictionary and syncs hardcoded properties (IsReady)
+    /// </summary>
+    public void UpdateInternalData(string key, string value)
+    {
+        _internalData[key] = value;
+
+        // Auto-Map special keys to properties
+        if (key == "IsReady" && bool.TryParse(value, out bool readyState))
+        {
+            IsReady = readyState;
+        }
+    }
+
+    public string Serialize()
+    {
+        return JsonConvert.SerializeObject(this);
     }
 }

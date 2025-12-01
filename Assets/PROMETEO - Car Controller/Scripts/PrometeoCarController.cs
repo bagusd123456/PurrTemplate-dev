@@ -82,7 +82,7 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
             if (owner.HasValue)
             {
                 clientId = owner.Value.id.value;
-                var lobbyDate = LobbyHandlerUtil.GetLobbyUserByClientId(clientId);
+                var lobbyDate = LobbyHandlerUtil.GetPlayerDataBySteamId(LobbyHandlerUtil.GetCurrentSteamId());
                 if (lobbyDate != null)
                 {
                     ownerName = lobbyDate.Username;

@@ -17,13 +17,13 @@ namespace NyxMachina.Multiplayer
 
     public struct OnPlayerJoinLobby : IPayload
     {
-        public UserLobbyData UserData;
-        public OnPlayerJoinLobby(UserLobbyData user) => UserData = user;
+        public ILobbyDataModel OnDataModel;
+        public OnPlayerJoinLobby(ILobbyDataModel player) => OnDataModel = player;
     }
 
     public struct OnPlayerLeftLobby : IPayload
     {
-        public UserLobbyData UserData;
-        public OnPlayerLeftLobby(UserLobbyData user) => UserData = user;
+        public ILobbyDataModel OnDataModel;
+        public OnPlayerLeftLobby(ILobbyDataModel player) => OnDataModel = player;
     }
 }
