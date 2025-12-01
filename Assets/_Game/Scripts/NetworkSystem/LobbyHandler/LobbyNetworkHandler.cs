@@ -59,50 +59,100 @@ namespace NyxMachina.Multiplayer
 
             ulong clientId = overrideClientId == 0 ? info.sender.id.value : overrideClientId;
 
-            // Create the Concrete Class with Steamworks Integration
+            // Server Setup (Local)
             var steamUser = LobbyHandler.CreateSteamUser(clientId, steamId);
             if (steamUser != null)
             {
-                // Add to the Dictionary
                 LobbyHandler.PlayerList[clientId] = steamUser;
-                var setPlayerTask = await LobbyDataHandler.SetPlayerData("IsReady", false);
-
-                if (!setPlayerTask.IsSuccess)
-                {
-                    Debug.LogWarning($"Failed while trying to upload data.\n" +
-                                     $"Unknown Error: {setPlayerTask.Message}");
-                }
-                
-                // Publish Event locally on Server so UI updates
+                await LobbyDataHandler.SetPlayerData("IsReady", false);
                 EVENT.Publish(new OnPlayerJoinLobby(steamUser));
             }
 
+            // Prepare Data Lists
             List<ulong> existingClientIds = new List<ulong>();
             List<string> existingSteamIds = new List<string>();
 
-            foreach((ulong keyClientId, var data) in LobbyHandler.PlayerList)
+            foreach ((ulong keyClientId, var data) in LobbyHandler.PlayerList)
             {
-                if(keyClientId == clientId) continue; // Don't send the new player to themselves yet
-                if(data is SteamLobbyUser u) 
+                if (keyClientId == clientId) continue; // Exclude the new guy from the "Old" list
+                if (data is SteamLobbyUser u)
                 {
                     existingClientIds.Add(u.ClientId);
                     existingSteamIds.Add(u.SteamID.ToString());
                 }
             }
 
-            foreach (var playerId in NetworkManager.main.players)
+            // Send EXISTING players to the NEW Client (Target)
+            // Find the PlayerID struct for the new client
+            PlayerID? newPlayerIdStruct = null;
+            foreach (var p in NetworkManager.main.players)
             {
-                if (existingClientIds.Exists(x => x == playerId.id.value))
-                {
-                    SyncExistingPlayers_RPC(playerId, existingClientIds.ToArray(), existingSteamIds.ToArray());
-                }
+                if (p.id.value == clientId) { newPlayerIdStruct = p; break; }
             }
 
-            // For client, it should be safe getting playerID from NetworkManager
-            LobbyHandler.currentPlayerId = NetworkManager.main.localPlayer;
-            Debug.Log($"[Server] Handshake Approved for {steamUser?.Username} (PurrID: {clientId}).");
+            if (newPlayerIdStruct.HasValue)
+            {
+                SyncPlayers_TargetRPC(newPlayerIdStruct.Value, existingClientIds.ToArray(), existingSteamIds.ToArray());
+            }
 
+            // Send the NEW Client to EXISTING Clients (Observer)
+            // We pass an array of size 1. This uses the exact same logic as above, keeping it scalable.
+            SyncPlayers_ObserverRPC(new ulong[] { clientId }, new string[] { steamId });
+
+            // Finalize
+            LobbyHandler.currentPlayerId = NetworkManager.main.localPlayer;
+            Debug.Log($"[Server] Handshake Approved for {steamUser?.Username}");
             return AsyncResult.Success();
+        }
+
+        /// <summary>
+        /// Shared logic: Takes arrays of IDs and ensures they exist in the local PlayerList.
+        /// This handles 1 player (new join) or 50 players (bulk sync) exactly the same way.
+        /// </summary>
+        private static void Internal_UpsertPlayers(ulong[] clientIds, string[] steamIds)
+        {
+            for (int i = 0; i < clientIds.Length; i++)
+            {
+                ulong cId = clientIds[i];
+                string sId = steamIds[i];
+
+                // Skip if it's me (Local Player) - I already added myself during Join
+                if (cId == NetworkManager.main.localPlayer.id.value) continue;
+
+                // If user already exists, skip (or update if you prefer)
+                if (LobbyHandler.PlayerList.ContainsKey(cId)) continue;
+
+                // Create and Add
+                var user = LobbyHandler.CreateSteamUser(cId, sId);
+                if (user != null)
+                {
+                    LobbyHandler.PlayerList[cId] = user;
+                    Debug.Log($"[Lobby] Synced User: {user.Username} (ID: {cId})");
+
+                    // 4. IMPORTANT: Notify UI that a new player is here
+                    EVENT.Publish(new OnPlayerJoinLobby(user));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Usage: Handshake Response.
+        /// Sends a list of EXISTING players to a SPECIFIC new client.
+        /// </summary>
+        [TargetRpc]
+        public static void SyncPlayers_TargetRPC(PlayerID target, ulong[] clientIds, string[] steamIds)
+        {
+            Internal_UpsertPlayers(clientIds, steamIds);
+        }
+
+        /// <summary>
+        /// Usage: New Player Notification.
+        /// Sends a list of NEW players (usually just an array of 1) to EVERYONE.
+        /// </summary>
+        [ObserversRpc]
+        public static void SyncPlayers_ObserverRPC(ulong[] clientIds, string[] steamIds)
+        {
+            Internal_UpsertPlayers(clientIds, steamIds);
         }
 
         [TargetRpc]

@@ -75,20 +75,33 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
 
     protected override void LateAwake()
     {
+        ulong clientId = 0;
+        string ownerName = "NULL";
+        if (owner.HasValue)
+        {
+            clientId = owner.Value.id.value;
+            var lobbyDate = LobbyHandlerUtil.GetPlayerDataByClientId(clientId);
+            if (lobbyDate != null)
+            {
+                ownerName = lobbyDate.Username;
+            }
+        }
+
+        //Setup VoiceReceiver
+        if (!voiceReceiver)
+        {
+            voiceReceiver = Instantiate(voiceReceiverPrefab);
+            voiceReceiver.name = $"{voiceReceiverPrefab.name}-{clientId}";
+            NetworkManager.main.Spawn(voiceReceiver.gameObject);
+            // ReSharper disable once Unity.InstantiateWithoutParent
+            voiceReceiver.transform.SetParent(transform);
+            voiceReceiver.transform.localPosition = new Vector3(0, 1, 0);
+        }
+
+        voiceInterface.Init(clientId, ownerName);
+
         if (isOwner)
         {
-            string ownerName = "NULL";
-            ulong clientId = 0;
-            if (owner.HasValue)
-            {
-                clientId = owner.Value.id.value;
-                var lobbyDate = LobbyHandlerUtil.GetPlayerDataBySteamId(LobbyHandlerUtil.GetCurrentSteamId());
-                if (lobbyDate != null)
-                {
-                    ownerName = lobbyDate.Username;
-                }
-            }
-
             if (cameraTarget == null)
             {
                 // If user forgot to assign it, create a temporary one to avoid crashes
@@ -103,7 +116,7 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
             {
                 CameraFollow.Instance.SetTarget(cameraTarget);
             }
-            
+
             // Setup UI
             if (SpeedTextListener.Instance != null)
             {
@@ -111,27 +124,15 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
                 useUI = carSpeedText != null;
             }
 
-            //Setup VoiceReceiver
-            if (!voiceReceiver)
+            if (voiceReceiver is NetworkIdentity identity)
             {
-                voiceReceiver = Instantiate(voiceReceiverPrefab);
-                voiceReceiver.name = $"{voiceReceiverPrefab.name}-{clientId}";
-                NetworkManager.main.Spawn(voiceReceiver.gameObject);
-                // ReSharper disable once Unity.InstantiateWithoutParent
-                voiceReceiver.transform.SetParent(transform);
-                voiceReceiver.transform.localPosition = new Vector3(0, 1, 0);
-                if (voiceReceiver is NetworkIdentity identity)
-                {
-                    identity.GiveOwnership(owner);
-                }
+                identity.GiveOwnership(owner);
             }
 
             if (!gameObject.TryGetComponent(out AudioListener audioListener))
             {
                 gameObject.AddComponent<AudioListener>();
             }
-
-            voiceInterface.Init(clientId, ownerName);
         }
     }
 

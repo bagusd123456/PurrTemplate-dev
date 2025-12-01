@@ -210,6 +210,26 @@ public class LobbyHandler
                 return AsyncResult<Lobby>.Fail($"Connection Rejected: {result.Message}");
             }
 
+            ulong myClientId = networkManager.localPlayer.id.value;
+
+            // Ensure we don't double add
+            if (!PlayerList.ContainsKey(myClientId))
+            {
+                var myUser = CreateSteamUser(myClientId, mySteamId);
+                if (myUser != null)
+                {
+                    PlayerList.Add(myClientId, myUser);
+                    Debug.Log($"[LobbyHandler] Added local player {myUser.Username} to PlayerList.");
+
+                    // Optional: Publish event so UI updates immediately for self
+                    EVENT.Publish(new OnPlayerJoinLobby(myUser));
+                }
+                else
+                {
+                    Debug.LogError("[LobbyHandler] Failed to create local SteamLobbyUser.");
+                }
+            }
+
             Debug.Log("[LobbyHandler] Join Successful!");
         }
         catch (Exception e)
@@ -710,12 +730,22 @@ public static class LobbyHandlerUtil
 {
     public static ILobbyDataModel GetPlayerDataByClientId(ulong clientId)
     {
-        if (!LobbyHandler.PlayerList.TryGetValue(clientId, out var result))
+        ILobbyDataModel result = null;
+        foreach (var playerData in LobbyHandler.PlayerList.Values)
         {
-            Debug.LogWarning($"Cannot found LobbyUserData with clientId '{clientId}'.");
-            return null;
+            if (playerData.ClientId == clientId)
+            {
+                result = playerData;
+            }
         }
 
+        if (result == null)
+        {
+            Debug.LogWarning($"Cannot found LobbyUserData with clientId '{clientId}'.\n" +
+                             $"Returning null!");
+            return null;
+        }
+        
         return result;
     }
 
