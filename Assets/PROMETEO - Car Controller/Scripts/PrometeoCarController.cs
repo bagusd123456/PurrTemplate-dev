@@ -1,3 +1,4 @@
+using NyxMachina.Multiplayer;
 using PurrNet;
 using PurrNet.Prediction;
 using System;
@@ -114,7 +115,7 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
                 NetworkManager.main.Spawn(voiceReceiver.gameObject);
                 // ReSharper disable once Unity.InstantiateWithoutParent
                 voiceReceiver.transform.SetParent(transform);
-                voiceReceiver.transform.position = new Vector3(0, 1, 0);
+                voiceReceiver.transform.localPosition = new Vector3(0, 1, 0);
                 if (voiceReceiver is NetworkIdentity identity)
                 {
                     identity.GiveOwnership(owner);
