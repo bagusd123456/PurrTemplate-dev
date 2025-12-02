@@ -75,8 +75,6 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
 
     protected override void LateAwake()
     {
-        if (!isServer) return;
-
         ulong clientId = 0;
         string ownerName = "NULL";
         if (owner.HasValue)
@@ -129,7 +127,7 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
                 gameObject.AddComponent<AudioListener>();
             }
         }
-        else
+        else if (isServer)
         {
             voiceInterface.Init(clientId, ownerName);
 
