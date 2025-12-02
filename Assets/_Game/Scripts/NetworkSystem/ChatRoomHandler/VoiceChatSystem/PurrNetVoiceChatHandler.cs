@@ -29,9 +29,9 @@ namespace NyxMachina.Multiplayer
 
         private void Awake()
         {
-            Shutdown();
             _voicePlayer = GetComponent<VoiceChatPlayer>();
             _voiceRecorder = GetComponent<VoiceChatRecorder>();
+            Shutdown();
         }
 
         protected override void OnSpawned()

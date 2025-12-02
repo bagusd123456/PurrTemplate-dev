@@ -75,6 +75,8 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
 
     protected override void LateAwake()
     {
+        if (!isServer) return;
+
         ulong clientId = 0;
         string ownerName = "NULL";
         if (owner.HasValue)
@@ -86,6 +88,13 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
                 ownerName = lobbyDate.Username;
             }
         }
+
+        if (!voiceReceiver)
+        {
+            voiceReceiver = Instantiate(voiceReceiverPrefab);
+        }
+
+        voiceReceiver.name = $"{voiceReceiverPrefab.name}-{clientId}";
 
         if (isOwner)
         {
@@ -127,7 +136,7 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
                 gameObject.AddComponent<AudioListener>();
             }
         }
-        else if (isServer)
+        else
         {
             voiceInterface.Init(clientId, ownerName);
 
