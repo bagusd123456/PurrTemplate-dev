@@ -1,6 +1,5 @@
-using System;
-using System.Collections.Generic;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using UnityEngine;
 
 public interface ILobbyDataModel

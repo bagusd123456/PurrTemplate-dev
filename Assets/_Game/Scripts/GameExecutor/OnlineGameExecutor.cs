@@ -195,7 +195,7 @@ public class OnlineGameExecutor : NetworkBehaviour
         }
 
         // Try to get the network SceneID for our configured gameplay scene name.
-        if (!LobbyHandler.networkManager.sceneModule.TryGetSceneID(gameSceneData, out var gameplaySceneId))
+        if (!LobbySystem.networkManager.sceneModule.TryGetSceneID(gameSceneData, out var gameplaySceneId))
         {
             return;
         }
@@ -220,28 +220,28 @@ public class OnlineGameExecutor : NetworkBehaviour
     {
         // Ensure the gameplay scene is valid and loaded on the server.
         var gameplaySceneData = SceneManager.GetSceneByName(gameplayScene);
-        if (!gameplaySceneData.IsValid() || !gameplaySceneData.isLoaded)
+        if (!gameplaySceneData.IsValid())
         {
-            Debug.LogWarning($"[HandlePlayerSceneLoaded] Gameplay scene '{gameplayScene}' is not valid or loaded on server. Aborting spawn check.");
+            //Debug.LogWarning($"[HandlePlayerSceneLoaded] Gameplay scene '{gameplayScene}' is not valid. Aborting spawn check.");
             return;
         }
 
         // Get the network SceneID for the gameplay scene.
-        if (!LobbyHandler.networkManager.sceneModule.TryGetSceneID(gameplaySceneData, out var gameplaySceneId))
+        if (!LobbySystem.networkManager.sceneModule.TryGetSceneID(gameplaySceneData, out var gameplaySceneId))
         {
             Debug.LogError($"[HandlePlayerSceneLoaded] Failed to get SceneID for gameplay scene '{gameplayScene}'.");
             return;
         }
 
         // Get the list of scenes the player is currently in.
-        if (!LobbyHandler.networkManager.TryGetPlayerScenes(player, out var currentPlayerScenes))
+        if (!LobbySystem.networkManager.TryGetPlayerScenes(player, out var currentPlayerScenes))
         {
             Debug.LogError($"[HandlePlayerSceneLoaded] Could not get player '{player.id}' current scene list.");
             return;
         }
 
         // If the player is not in the gameplay scene, do nothing.
-        if (!currentPlayerScenes.Any(s => s.id == gameplaySceneId.id))
+        if (currentPlayerScenes.All(s => s.id != gameplaySceneId.id))
         {
             return;
         }
@@ -249,10 +249,10 @@ public class OnlineGameExecutor : NetworkBehaviour
         // At this point, a player has entered the gameplay scene.
         // We must ensure that EVERY player in that scene has a character spawned.
         // This handles both the new player and ensures existing players are visible to them.
-        foreach (var playerToSpawn in LobbyHandler.networkManager.players)
+        foreach (var playerToSpawn in LobbySystem.networkManager.players)
         {
             // Verify each player is actually in the gameplay scene before spawning them.
-            if (LobbyHandler.networkManager.TryGetPlayerScenes(playerToSpawn, out var scenesOfPlayer) &&
+            if (LobbySystem.networkManager.TryGetPlayerScenes(playerToSpawn, out var scenesOfPlayer) &&
                 scenesOfPlayer.Any(s => s.id == gameplaySceneId.id))
             {
                 SpawnPlayer(playerToSpawn);
@@ -301,7 +301,7 @@ public class OnlineGameExecutor : NetworkBehaviour
         };
 
         // Asynchronously load the scene on the server.
-        var loadSceneTask = LobbyHandler.networkManager.sceneModule.LoadSceneAsync(gameplayScene, loadSceneParam);
+        var loadSceneTask = LobbySystem.networkManager.sceneModule.LoadSceneAsync(gameplayScene, loadSceneParam);
         while (!loadSceneTask.isDone)
         {
             await Task.Yield(); // Wait for the scene to finish loading.
@@ -315,9 +315,9 @@ public class OnlineGameExecutor : NetworkBehaviour
         }
 
         // Once the scene is loaded, add the player to the scene's tracking list.
-        if (LobbyHandler.networkManager.sceneModule.TryGetSceneID(scene, out var sceneId))
+        if (LobbySystem.networkManager.sceneModule.TryGetSceneID(scene, out var sceneId))
         {
-            LobbyHandler.networkManager.scenePlayersModule.AddPlayerToScene(playerId, sceneId);
+            LobbySystem.networkManager.scenePlayersModule.AddPlayerToScene(playerId, sceneId);
             Debug.Log($"Assigned player '{playerId.id}' to the new scene with ID '{sceneId.id}'.");
         }
 

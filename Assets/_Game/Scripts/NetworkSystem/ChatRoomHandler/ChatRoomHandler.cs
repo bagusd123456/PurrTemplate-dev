@@ -186,7 +186,7 @@ public static class ChatRoomHandlerUtil
     [Command]
     public static void SendChatMessage(string message)
     {
-        LobbyHandler.chatRoomHandler.SendChatMessage(message);
+        LobbySystem.chatRoomHandler.SendChatMessage(message);
     }
 
     [Command]
@@ -194,23 +194,23 @@ public static class ChatRoomHandlerUtil
     {
         if (state == 0)
         {
-            LobbyHandler.chatRoomHandler.SetVoiceMode(ChatRoomHandler.VoiceMode.PushToTalk);
+            LobbySystem.chatRoomHandler.SetVoiceMode(ChatRoomHandler.VoiceMode.PushToTalk);
         }
         else if (state == 1)
         {
-            LobbyHandler.chatRoomHandler.SetVoiceMode(ChatRoomHandler.VoiceMode.VoiceActivity);
+            LobbySystem.chatRoomHandler.SetVoiceMode(ChatRoomHandler.VoiceMode.VoiceActivity);
         }
     }
 
     [Command]
     public static void StartPushToTalk()
     {
-        LobbyHandler.chatRoomHandler.StartPushToTalk();
+        LobbySystem.chatRoomHandler.StartPushToTalk();
     }
 
     [Command]
     public static void StopPushToTalk()
     {
-        LobbyHandler.chatRoomHandler.StopPushToTalk();
+        LobbySystem.chatRoomHandler.StopPushToTalk();
     }
 }

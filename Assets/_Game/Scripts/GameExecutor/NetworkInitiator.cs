@@ -10,7 +10,7 @@ public class NetworkInitiator : MonoBehaviour
     [SerializeField] private NetworkManager networkManager;
     [SerializeField] private LobbyManager lobbyManager;
     [SerializeField] private OnlineGameExecutor onlineGameExecutor;
-    public LobbyHandler LobbyHandler { get; private set; }
+    public LobbySystem LobbySystem { get; private set; }
 
     private async void Awake()
     {
@@ -25,8 +25,8 @@ public class NetworkInitiator : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        LobbyHandler = new LobbyHandler(lobbyManager, networkManager);
-        await LobbyHandler.Init();
+        LobbySystem = new LobbySystem(lobbyManager, networkManager);
+        await LobbySystem.Init();
         Instantiate(onlineGameExecutor);
     }
 

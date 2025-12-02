@@ -49,7 +49,7 @@ public class LobbySelectionPanel : View
             try
             {
                 // Asynchronously search for lobbies
-                var searchResult = await LobbyHandler.lobbyManager.CurrentProvider.SearchLobbiesAsync(new());
+                var searchResult = await LobbySystem.lobbyManager.CurrentProvider.SearchLobbiesAsync(new());
 
                 // If the task was cancelled, we should not process the result
                 if (cancellationToken.IsCancellationRequested)
@@ -103,7 +103,7 @@ public class LobbySelectionPanel : View
     {
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
         loadingPanel?.Set("Joining Lobby...");
-        var createLobbyTask = await LobbyHandler.JoinLobbyByIdAsync(targetLobby.LobbyId);
+        var createLobbyTask = await LobbySystem.JoinLobbyByIdAsync(targetLobby.LobbyId);
         if (createLobbyTask.IsSuccess)
         {
             var lobby = createLobbyTask.Result;

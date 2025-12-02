@@ -14,7 +14,6 @@ public class SteamLobbyUser : ILobbyDataModel
     public string UniqueUserId { get; internal set; }
     [JsonProperty("Username")]
     public string Username { get; internal set; }
-    public Texture2D UserAvatar { get; internal set; }
     [JsonProperty("IsReady")]
     public bool IsReady { get; internal set; }
     [JsonProperty("IsHost")]
@@ -25,6 +24,7 @@ public class SteamLobbyUser : ILobbyDataModel
     public Dictionary<string, object> Extra => _internalData;
 
     public CSteamID SteamID { get; private set; }
+    public Texture2D UserAvatar { get; internal set; }
 
     public SteamLobbyUser()
     {
@@ -40,6 +40,8 @@ public class SteamLobbyUser : ILobbyDataModel
 
         // Get Username
         Username = SteamFriends.GetFriendPersonaName(steamId);
+
+        UniqueUserId = steamId.ToString();
 
         // Get Avatar
         UserAvatar = GetSteamImageAsTexture2D(steamId);
@@ -89,11 +91,11 @@ public class SteamLobbyUser : ILobbyDataModel
             int bottomRowIndex = (height - y - 1) * rowSpan;
 
             // Copy top to temp
-            System.Array.Copy(buffer, topRowIndex, tempRow, 0, rowSpan);
+            Array.Copy(buffer, topRowIndex, tempRow, 0, rowSpan);
             // Copy bottom to top
-            System.Array.Copy(buffer, bottomRowIndex, buffer, topRowIndex, rowSpan);
+            Array.Copy(buffer, bottomRowIndex, buffer, topRowIndex, rowSpan);
             // Copy temp to bottom
-            System.Array.Copy(tempRow, 0, buffer, bottomRowIndex, rowSpan);
+            Array.Copy(tempRow, 0, buffer, bottomRowIndex, rowSpan);
         }
     }
 

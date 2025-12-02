@@ -5,7 +5,9 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "NyxMachina.Multiplayer",
-        "Sirenix.OdinInspector.Modules.Unity.Addressables"
+        "Sirenix.OdinInspector.Modules.Unity.Addressables",
+        "PurrNetLobbySetup",
+        "PurrNet.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -13,7 +15,8 @@
     "overrideReferences": true,
     "precompiledReferences": [
         "nunit.framework.dll",
-        "Sirenix.Serialization.dll"
+        "Sirenix.Serialization.dll",
+        "Newtonsoft.Json.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [

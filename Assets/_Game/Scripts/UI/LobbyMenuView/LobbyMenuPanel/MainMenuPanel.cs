@@ -20,7 +20,7 @@ public class MainMenuPanel : View
     {
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
         loadingPanel.Set("Joining Lobby...");
-        var joinLobbyByIdTask = await LobbyHandler.JoinLobbyByIdAsync(lobbyIdField.text);
+        var joinLobbyByIdTask = await LobbySystem.JoinLobbyByIdAsync(lobbyIdField.text);
 
         if (joinLobbyByIdTask.IsFailOrCanceled)
         {
@@ -42,7 +42,7 @@ public class MainMenuPanel : View
     {
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
         loadingPanel.Set("Creating Lobby...");
-        var createLobbyTask = await LobbyHandler.CreateLobbyAsync();
+        var createLobbyTask = await LobbySystem.CreateLobbyAsync();
 
         if (createLobbyTask.IsFailOrCanceled)
         {

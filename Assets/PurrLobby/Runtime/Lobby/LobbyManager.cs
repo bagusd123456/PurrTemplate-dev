@@ -33,7 +33,7 @@ namespace PurrLobby
         public UnityEvent onInitialized = new UnityEvent();
         public UnityEvent onShutdown = new UnityEvent();
 
-        public ILobbyProvider CurrentProvider => currentProvider as ILobbyProvider;
+        public ILobbyProvider CurrentProvider => _currentProvider ?? (currentProvider as ILobbyProvider);
 
         private Lobby _currentLobby
         {

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using NyxMachina.Multiplayer;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -39,12 +40,12 @@ public class LobbyViewPanel : View
 
     private void OnEnable()
     {
-        if (LobbyHandler.lobbyManager.CurrentLobby.IsValid)
+        if (LobbySystem.lobbyManager.CurrentLobby.IsValid)
         {
-            HandleRoomUpdated(LobbyHandler.lobbyManager.CurrentLobby);
+            HandleRoomUpdated(LobbySystem.lobbyManager.CurrentLobby);
         }
-        LobbyHandler.lobbyManager.OnRoomUpdated.AddListener(HandleRoomUpdated);
-        LobbyHandler.lobbyManager.OnFriendListPulled.AddListener(HandleFriendListPulled);
+        LobbySystem.lobbyManager.OnRoomUpdated.AddListener(HandleRoomUpdated);
+        LobbySystem.lobbyManager.OnFriendListPulled.AddListener(HandleFriendListPulled);
 
         // It's best practice to create a new CancellationTokenSource in OnEnable.
         _cancellationTokenSource = new CancellationTokenSource();
@@ -54,8 +55,8 @@ public class LobbyViewPanel : View
 
     private void OnDisable()
     {
-        LobbyHandler.lobbyManager.OnRoomUpdated.RemoveListener(HandleRoomUpdated);
-        LobbyHandler.lobbyManager.OnFriendListPulled.RemoveListener(HandleFriendListPulled);
+        LobbySystem.lobbyManager.OnRoomUpdated.RemoveListener(HandleRoomUpdated);
+        LobbySystem.lobbyManager.OnFriendListPulled.RemoveListener(HandleFriendListPulled);
 
         // Cancel the token to stop the loop and dispose of the source.
         _cancellationTokenSource?.Cancel();
@@ -71,7 +72,7 @@ public class LobbyViewPanel : View
             try
             {
                 // Asynchronously get the list of friends
-                var friendsList = await LobbyHandler.lobbyManager.CurrentProvider.GetFriendsAsync(new());
+                var friendsList = await LobbySystem.lobbyManager.CurrentProvider.GetFriendsAsync(new());
 
                 // Check if cancellation was requested while waiting
                 if (cancellationToken.IsCancellationRequested)
@@ -115,7 +116,7 @@ public class LobbyViewPanel : View
                 friendEntryList.Add(friendEntry);
             }
 
-            friendEntry.Init(user, LobbyHandler.lobbyManager);
+            friendEntry.Init(user, LobbySystem.lobbyManager);
             friendEntry.gameObject.SetActive(true);
         }
     }
@@ -161,9 +162,9 @@ public class LobbyViewPanel : View
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
         loadingPanel.Set($"Starting Game...");
 
-        if (LobbyHandler.networkManager.isServer)
+        if (LobbySystem.networkManager.isServer)
         {
-            await LobbyHandler.SetLobbyStartedAsync();
+            await LobbyHostCommand.SetLobbyStartedAsync();
             await OnlineGameExecutor.Instance.ServerChangeScene();
         }
         LobbyMenuView.Instance.HideView<LobbyLoadingPanel>();
@@ -174,7 +175,7 @@ public class LobbyViewPanel : View
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
         IsReady = !IsReady;
         loadingPanel.Set($"Setting ready to '{IsReady}'...");
-        var setReadyTask = await LobbyHandler.SetIsReadyAsync(IsReady);
+        var setReadyTask = await LobbySystem.SetIsReadyAsync(IsReady);
         LobbyMenuView.Instance.ShowView<LobbyViewPanel>();
     }
 
@@ -182,7 +183,7 @@ public class LobbyViewPanel : View
     {
         var loadingPanel = LobbyMenuView.Instance.ShowView<LobbyLoadingPanel>() as LobbyLoadingPanel;
         loadingPanel.Set($"Leaving Lobby...");
-        var leavelobbyTask = await LobbyHandler.LeaveLobbyAsync();
+        var leavelobbyTask = await LobbySystem.LeaveLobbyAsync();
 
         LobbyMenuView.Instance.ShowView<MainMenuPanel>();
     }
