@@ -29,27 +29,34 @@ namespace NyxMachina.Multiplayer
 
         private void Awake()
         {
+            Shutdown();
             _voicePlayer = GetComponent<VoiceChatPlayer>();
             _voiceRecorder = GetComponent<VoiceChatRecorder>();
         }
 
         protected override void OnSpawned()
         {
-            ulong clientId = 0;
-
-            if (isOwner && owner.HasValue)
+            if (!isOwner) return;
+            if (owner.HasValue)
             {
-                clientId = owner.Value.id.value;
-                GiveOwnership(owner.Value);
+                ClientId = owner.Value.id;
             }
-
-            ClientId = clientId;
             Init();
         }
 
         protected override void OnDespawned()
         {
             Shutdown();
+        }
+
+        protected override void OnOwnerChanged(PlayerID? oldOwner, PlayerID? newOwner, bool selfRequest, bool asServer)
+        {
+            if (!asServer) return;
+            if (newOwner.HasValue)
+            {
+                ClientId = newOwner.Value.id;
+            }
+            Init();
         }
 
         public void Init()

@@ -176,6 +176,7 @@ namespace NyxMachina.Multiplayer
 
         private void Update()
         {
+            if (!isActiveAndEnabled) return;
             HandleInput();
             if (_isRecording) ProcessMicrophone();
         }

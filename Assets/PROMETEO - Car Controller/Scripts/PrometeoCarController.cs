@@ -75,6 +75,8 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
 
     protected override void LateAwake()
     {
+        if (!isServer) return;
+
         ulong clientId = 0;
         string ownerName = "NULL";
         if (owner.HasValue)
@@ -86,19 +88,6 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
                 ownerName = lobbyDate.Username;
             }
         }
-
-        //Setup VoiceReceiver
-        if (!voiceReceiver)
-        {
-            voiceReceiver = Instantiate(voiceReceiverPrefab);
-            voiceReceiver.name = $"{voiceReceiverPrefab.name}-{clientId}";
-            NetworkManager.main.Spawn(voiceReceiver.gameObject);
-            // ReSharper disable once Unity.InstantiateWithoutParent
-            voiceReceiver.transform.SetParent(transform);
-            voiceReceiver.transform.localPosition = new Vector3(0, 1, 0);
-        }
-
-        voiceInterface.Init(clientId, ownerName);
 
         if (isOwner)
         {
@@ -124,14 +113,33 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
                 useUI = carSpeedText != null;
             }
 
+            voiceInterface.Init(clientId, ownerName);
+
             if (voiceReceiver is NetworkIdentity identity)
             {
                 identity.GiveOwnership(owner);
+                Debug.Log($"Ownership transferred to: {owner.Value.id.value}");
+                // ReSharper disable once Unity.InstantiateWithoutParent
+                voiceReceiver.transform.SetParent(transform);
+                voiceReceiver.transform.localPosition = new Vector3(0, 1, 0);
             }
 
             if (!gameObject.TryGetComponent(out AudioListener audioListener))
             {
                 gameObject.AddComponent<AudioListener>();
+            }
+        }
+        else
+        {
+            voiceInterface.Init(clientId, ownerName);
+
+            if (voiceReceiver is NetworkIdentity identity)
+            {
+                identity.GiveOwnership(owner);
+                Debug.Log($"Ownership transferred to: {owner.Value.id.value}");
+                // ReSharper disable once Unity.InstantiateWithoutParent
+                voiceReceiver.transform.SetParent(transform);
+                voiceReceiver.transform.localPosition = new Vector3(0, 1, 0);
             }
         }
     }

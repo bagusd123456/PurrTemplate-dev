@@ -77,7 +77,9 @@ namespace NyxMachina.Multiplayer
 
             _lastSample = 0f;
             _audioSource.clip = AudioClip.Create("VoiceStream", _config.SampleRate, 1, _config.SampleRate, true, OnPcmRead);
-            _audioSource.Play();
+            
+            if (isActiveAndEnabled)
+                _audioSource.Play();
 
             AudioSettings.GetDSPBufferSize(out int bufferLength, out int numBuffers);
             _bufferLatency = (double)bufferLength / _config.SampleRate;
