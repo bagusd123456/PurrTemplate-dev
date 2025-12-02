@@ -87,13 +87,6 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
             }
         }
 
-        if (!voiceReceiver)
-        {
-            voiceReceiver = Instantiate(voiceReceiverPrefab);
-        }
-
-        voiceReceiver.name = $"{voiceReceiverPrefab.name}-{clientId}";
-
         if (isOwner)
         {
             if (cameraTarget == null)
@@ -118,6 +111,13 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
                 useUI = carSpeedText != null;
             }
 
+            if (!voiceReceiver)
+            {
+                voiceReceiver = Instantiate(voiceReceiverPrefab);
+            }
+
+            voiceReceiver.name = $"{voiceReceiverPrefab.name}-{clientId}";
+
             voiceInterface.Init(clientId, ownerName);
 
             if (voiceReceiver is NetworkIdentity identity)
@@ -136,6 +136,13 @@ public class PrometeoCarController : PredictedIdentity<CarInputData, CarInputHan
         }
         else if (isServer)
         {
+            if (!voiceReceiver)
+            {
+                voiceReceiver = Instantiate(voiceReceiverPrefab);
+            }
+            NetworkManager.main.Spawn(voiceReceiver.gameObject);
+            voiceReceiver.name = $"{voiceReceiverPrefab.name}-{clientId}";
+
             voiceInterface.Init(clientId, ownerName);
 
             if (voiceReceiver is NetworkIdentity identity)

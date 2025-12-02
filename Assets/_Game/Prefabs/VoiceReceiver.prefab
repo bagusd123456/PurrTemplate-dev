@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 7032724786890155880}
   - component: {fileID: 1514942239955230839}
   - component: {fileID: 3403221557102586996}
+  - component: {fileID: -495819467335872174}
   m_Layer: 0
   m_Name: VoiceReceiver
   m_TagString: Untagged
@@ -188,3 +189,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pushToTalkKey: 118
   usePushToTalk: 0
+  OpusComplexity: 2
+--- !u!114 &-495819467335872174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1926406487543018232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d589309a8b0b45f44a0ddd1e2e82017a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _isSetup: 0
+  _prefabId: -2147483648
+  _componentIndex: -2147483648
+  _shouldBePooled: 0
+  _parent: {fileID: 0}
+  _invertedPathToNearestParent: 
+  _directChildren: []
+  _networkRules: {fileID: 0}
+  _visitiblityRules: {fileID: 0}
