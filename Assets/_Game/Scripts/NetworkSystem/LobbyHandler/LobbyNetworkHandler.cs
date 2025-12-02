@@ -102,32 +102,32 @@ namespace NyxMachina.Multiplayer
             }
 
             return AsyncResult.Success();
+        }
 
-            [ServerRpc(requireOwnership: false)]
-            static void RequestFullPlayerListServerRPC(RPCInfo info = default)
+        [ServerRpc(requireOwnership: false)]
+        static void RequestFullPlayerListServerRPC(RPCInfo info = default)
+        {
+            ulong senderId = info.sender.id.value;
+            Debug.Log($"[Server] Client {senderId} requested full player list sync.");
+
+            // Gather Data (All existing players excluding the requester)
+            var (clientIds, steamIds) = GetExistingPlayersData(excludeClientId: senderId);
+
+            // Send Data (Reuse existing logic)
+            // The transport guarantees order, so this data arrives BEFORE the response signal below.
+            SyncPlayers_TargetRPC(info.sender, clientIds, steamIds);
+
+            // Send Completion Signal
+            RequestFullPlayerListResponseTargetRPC(info.sender);
+        }
+
+        [TargetRpc]
+        static void RequestFullPlayerListResponseTargetRPC(PlayerID target)
+        {
+            // Unlock the waiting task on the Client
+            if (_pullListTcs != null && !_pullListTcs.Task.IsCompleted)
             {
-                ulong senderId = info.sender.id.value;
-                Debug.Log($"[Server] Client {senderId} requested full player list sync.");
-
-                // Gather Data (All existing players excluding the requester)
-                var (clientIds, steamIds) = GetExistingPlayersData(excludeClientId: senderId);
-
-                // Send Data (Reuse existing logic)
-                // The transport guarantees order, so this data arrives BEFORE the response signal below.
-                SyncPlayers_TargetRPC(info.sender, clientIds, steamIds);
-
-                // Send Completion Signal
-                RequestFullPlayerListResponseTargetRPC(info.sender);
-            }
-
-            [TargetRpc]
-            static void RequestFullPlayerListResponseTargetRPC(PlayerID target)
-            {
-                // Unlock the waiting task on the Client
-                if (_pullListTcs != null && !_pullListTcs.Task.IsCompleted)
-                {
-                    _pullListTcs.TrySetResult(true);
-                }
+                _pullListTcs.TrySetResult(true);
             }
         }
 
